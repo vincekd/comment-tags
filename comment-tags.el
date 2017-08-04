@@ -127,8 +127,11 @@
            (in-comment (and (nth 4 (syntax-ppss start-p)) (nth 4 (syntax-ppss end-p))))
            (comment-start (nth 8 (syntax-ppss start-p))))
       (when (and in-comment
-                 (or (not comment-tags/comment-start-only)))
-        ;;(message "comment: %s" (buffer-substring-no-properties comment-start end-p))
+                 (or (not comment-tags/comment-start-only)
+                     (save-match-data
+                       (string-match
+                      (rx bol (0+ (not alphanumeric)) eol)
+                      (buffer-substring-no-properties comment-start start-p)))))
         (put-text-property start-p end-p 'comment-tags/highlight (match-data))))))
 
 (defun comment-tags/highlight-tags (limit)
