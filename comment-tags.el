@@ -85,23 +85,20 @@
   :group 'comment-tags
   :type 'string)
 
-;;(make-face 'font-lock-comment-tags-face)
-;; (modify-face 'font-lock-comment-tags-face
-;;              comment-tags/foreground-color
-;;              comment-tags/background-color
-;;              nil t nil t nil nil)
-(defface comment-tags/face
-  '((t :foreground "red"
-       :background nil
-       :weight bold
-       :underline nil))
-  "Font face for highlighted tags."
-  :group 'comment-tags)
+(make-face 'font-lock-comment-tags-face)
+(modify-face 'font-lock-comment-tags-face
+             comment-tags/foreground-color
+             comment-tags/background-color
+             nil t nil t nil nil)
+;; (defface comment-tags/face
+;;   '((t :foreground "red" ;;'comment-tags/foreground-color
+;;        :background nil ;;'comment-tags/background-color
+;;        :weight bold
+;;        :underline nil))
+;;   "Font face for highlighted tags."
+;;   :group 'comment-tags)
 
-(defvar comment-tags/syntax-table
-  (let ((st (make-syntax-table)))
-    (message "make syntax-table")))
-
+;;; funcs
 (defun comment-tags--join (list joiner)
   (mapconcat 'identity list joiner))
 
@@ -111,34 +108,59 @@
               ":"
             "") "\\)"))
 
-(defconst comment-tags/syntax-propertize-function
-  (syntax-propertize-rules
-   ((comment-tags/make-regexp)
-    (0 (comment-tags/highlight-keywords)))))
+;; (defconst comment-tags/syntax-propertize-function
+;;   (syntax-propertize-rules
+;;    ((comment-tags/make-regexp)
+;;     (0 (ignore (comment-tags/highlight-keywords))))))
+(defun comment-tags/syntax-propertize-function (start end)
+  (let ((case-fold-search nil)
+        (inhibit-modification-hooks t))
+    (goto-char start)
+    ;;(message "propertize func: %s" (buffer-substring-no-properties start end))
+    (remove-text-properties start end '(comment-tags/highlight))
+    (funcall
+     (syntax-propertize-rules
+      ((comment-tags/make-regexp)
+       (0 (ignore (comment-tags/find-tags)))))
+     start end)))
 
-(defun comment-tags/highlight-keywords ()
+(defun comment-tags/highlight-tags (limit)
+  (let* ((pos (point))
+         (chg (next-single-property-change pos 'comment-tags/highlight nil limit)))
+    ;;(message "str: %s" (buffer-substring-no-properties pos chg))
+    (message "highlight: %s" (eq t (get-text-property chg 'comment-tags/highlight)))
+    (when (and chg (> chg pos))
+      (goto-char (1- chg))
+      (when (get-text-property chg 'comment-tags/highlight)
+          (set-match-data )))))
+
+(defun comment-tags/find-tags ()
   "Highlight tags in var `comment-tags/keywords'."
   (save-excursion
     (let* ((end-p (point))
            (start-p (match-beginning 0))
            (in-comment (and (nth 4 (syntax-ppss start-p)) (nth 4 (syntax-ppss end-p)))))
       (when in-comment
-        (message "be: %s; end: %s; str: %s" start-p end-p (match-string-no-properties 0))
-        ;;(set-text-properties start-p end-p nil)
-        ;;(put-text-property start-p end-p 'face (list :foreground "#FF0000"))
-        ;;(add-text-properties start-p end-p '(face font-lock-comment-tags-face))
-        ;;(put-text-property start-p end-p 'face 'font-lock-comment-tags-face)
-        (put-text-property start-p end-p 'face 'comment-tags/face)
-        ))))
+        (put-text-property start-p end-p 'comment-tags/highlight t)))))
+
+;;; vars
+(defvar comment-tags/font-lock-keywords
+  ;;`((comment-tags/highlight-tags 0 comment-tags/face t)))
+  ;;`((comment-tags/highlight-tags 1 font-lock-comment-tags-face t)))
+  `((,(lambda (limit)
+        ;;(comment-tags/highlight-tags limit))
+        (if (point))
+    (1 font-lock-comment-tags-face t))))
 
 ;;;###autoload
 (define-minor-mode comment-tags-mode
   "Highlight and navigate comment tags."
   :lighter "Comment Tags"
   (message "loaded comment-tags")
-  ;;(set (make-local-variable 'comment-tags-function) 'comment-tags/highlight-keywords)
   (set (make-local-variable 'syntax-propertize-function)
-       comment-tags/syntax-propertize-function))
+       #'comment-tags/syntax-propertize-function)
+  (set (make-local-variable 'font-lock-defaults)
+       '(comment-tags/font-lock-keywords)))
 
 (provide 'comment-tags)
 
