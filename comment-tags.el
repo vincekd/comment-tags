@@ -67,7 +67,7 @@
   :group 'comment-tags
   :type 'boolean)
 
-(defcustom comment-tags/comment-start nil
+(defcustom comment-tags/comment-start-only nil
   "Only highlight and track tags that are the beginning of a comment"
   :group 'comment-tags
   :type 'boolean)
@@ -108,15 +108,10 @@
               ":"
             "") "\\)"))
 
-;; (defconst comment-tags/syntax-propertize-function
-;;   (syntax-propertize-rules
-;;    ((comment-tags/make-regexp)
-;;     (0 (ignore (comment-tags/highlight-keywords))))))
 (defun comment-tags/syntax-propertize-function (start end)
   (let ((case-fold-search nil)
         (inhibit-modification-hooks t))
     (goto-char start)
-    ;;(message "propertize func: %s" (buffer-substring-no-properties start end))
     (remove-text-properties start end '(comment-tags/highlight))
     (funcall
      (syntax-propertize-rules
@@ -124,43 +119,42 @@
        (0 (ignore (comment-tags/find-tags)))))
      start end)))
 
-(defun comment-tags/highlight-tags (limit)
-  (let* ((pos (point))
-         (chg (next-single-property-change pos 'comment-tags/highlight nil limit)))
-    ;;(message "str: %s" (buffer-substring-no-properties pos chg))
-    (message "highlight: %s" (eq t (get-text-property chg 'comment-tags/highlight)))
-    (when (and chg (> chg pos))
-      (goto-char (1- chg))
-      (when (get-text-property chg 'comment-tags/highlight)
-          (set-match-data )))))
-
 (defun comment-tags/find-tags ()
   "Highlight tags in var `comment-tags/keywords'."
   (save-excursion
     (let* ((end-p (point))
            (start-p (match-beginning 0))
-           (in-comment (and (nth 4 (syntax-ppss start-p)) (nth 4 (syntax-ppss end-p)))))
-      (when in-comment
-        (put-text-property start-p end-p 'comment-tags/highlight t)))))
+           (in-comment (and (nth 4 (syntax-ppss start-p)) (nth 4 (syntax-ppss end-p))))
+           (comment-start (nth 8 (syntax-ppss start-p))))
+      (when (and in-comment
+                 (or (not comment-tags/comment-start-only)))
+        ;;(message "comment: %s" (buffer-substring-no-properties comment-start end-p))
+        (put-text-property start-p end-p 'comment-tags/highlight (match-data))))))
+
+(defun comment-tags/highlight-tags (limit)
+  (let* ((pos (point))
+         (chg (next-single-property-change pos 'comment-tags/highlight nil limit))
+         (reg (comment-tags/make-regexp)))
+    (when (and chg (> chg pos))
+      (goto-char chg)
+      (let ((value (get-text-property chg 'comment-tags/highlight)))
+        (if value
+            (progn
+              (set-match-data value)
+              t)
+          (comment-tags/highlight-tags limit))))))
 
 ;;; vars
 (defvar comment-tags/font-lock-keywords
-  ;;`((comment-tags/highlight-tags 0 comment-tags/face t)))
-  ;;`((comment-tags/highlight-tags 1 font-lock-comment-tags-face t)))
-  `((,(lambda (limit)
-        ;;(comment-tags/highlight-tags limit))
-        (if (point))
-    (1 font-lock-comment-tags-face t))))
+  `((comment-tags/highlight-tags 1 font-lock-comment-tags-face t)))
 
 ;;;###autoload
 (define-minor-mode comment-tags-mode
   "Highlight and navigate comment tags."
   :lighter "Comment Tags"
-  (message "loaded comment-tags")
   (set (make-local-variable 'syntax-propertize-function)
        #'comment-tags/syntax-propertize-function)
-  (set (make-local-variable 'font-lock-defaults)
-       '(comment-tags/font-lock-keywords)))
+  (font-lock-add-keywords nil comment-tags/font-lock-keywords))
 
 (provide 'comment-tags)
 
