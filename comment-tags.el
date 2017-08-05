@@ -75,6 +75,9 @@
   :group 'comment-tags
   :type 'string)
 
+(defconst comment-tags/temp-buffer-name "*comment-tags*"
+  "Name for temp buffers to list tags.")
+
 (make-face 'font-lock-comment-tags-face)
 (modify-face 'font-lock-comment-tags-face
              comment-tags/foreground-color
@@ -106,6 +109,7 @@ Mark with `comment-tags/highlight' prop."
   (let ((case-fold-search nil)
         (inhibit-modification-hooks t))
     (goto-char start)
+    (setq-local comment-tags/buffer-tags '())
     (remove-text-properties start end '(comment-tags/highlight))
     (funcall
      (syntax-propertize-rules
@@ -126,7 +130,12 @@ Mark with `comment-tags/highlight' prop."
                        (string-match
                       (rx bol (0+ (not alphanumeric)) eol)
                       (buffer-substring-no-properties comment-start start-p)))))
-        (put-text-property start-p end-p 'comment-tags/highlight (match-data))))))
+        (put-text-property start-p end-p 'comment-tags/highlight (match-data))
+        ;; push to local var for easy display
+        (push (list (buffer-substring (line-beginning-position) (line-end-position))
+                ;;TODO: add line num
+               (match-data))
+              comment-tags/buffer-tags)))))
 
 (defun comment-tags/highlight-tags (limit)
   "Find areas marked with `comment-tags/highlight' and apply proper face within LIMIT."
@@ -147,9 +156,13 @@ Mark with `comment-tags/highlight' prop."
   ;;TODO: finish this
   "List all tags in the current buffer."
   (interactive)
-  (with-output-to-temp-buffer "*comment-tags*"
-    (print "testing"))
-  (message "comment-tags/list-tags-buffer"))
+  (with-output-to-temp-buffer comment-tags/temp-buffer-name
+    (with-current-buffer comment-tags/temp-buffer-name
+      ;;(switch-to-buffer-other-window comment-tags/temp-buffer-name)
+      (dolist (element comment-tags/buffer-tags)
+        ;;(princ (format "%s" (car element)))
+        (insert (format "%s" (car element)))
+        ))))
 
 ;;;###autoload
 (defun comment-tags-list-tags-project ()
@@ -163,6 +176,7 @@ Mark with `comment-tags/highlight' prop."
   ;; TODO: finish this
   "List all tags in the current dir."
   (interactive)
+  ;;()
   (message "comment-tags/list-tags-dir"))
 
 ;; TODO: after list
@@ -178,6 +192,7 @@ Mark with `comment-tags/highlight' prop."
   "Enable comment-tags-mode."
   (set (make-local-variable 'syntax-propertize-function)
        #'comment-tags/syntax-propertize-function)
+  (set (make-local-variable 'comment-tags/buffer-tags) '())
   (font-lock-add-keywords nil comment-tags/font-lock-keywords))
 
 (defun comment-tags/disable ()
@@ -188,6 +203,9 @@ Mark with `comment-tags/highlight' prop."
 ;;; vars
 (defvar comment-tags/font-lock-keywords
   `((comment-tags/highlight-tags 1 font-lock-comment-tags-face t)))
+
+(defvar-local comment-tags/buffer-tags '()
+  "List of tags accumulated in current buffer.")
 
 ;;;###autoload
 (define-minor-mode comment-tags-mode
