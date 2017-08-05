@@ -28,12 +28,13 @@
 ;;; Commentary:
 ;;
 ;;; TODO:
-;; + find all instances in project and list them
+;; + find all instances in buffer/project/directory and list them
 ;; + allow differrent fonts for different `comment-tags/keywords'
-;; +
+;; + keymap to search/list tags
 ;;
 ;;; Code:
 
+(require 'ag)
 
 ;;; customize
 (defgroup comment-tags nil
@@ -141,6 +142,38 @@ Mark with `comment-tags/highlight' prop."
               t)
           (comment-tags/highlight-tags limit))))))
 
+;;;###autoload
+(defun comment-tags-list-tags-buffer ()
+  ;;TODO: finish this
+  "List all tags in the current buffer."
+  (interactive)
+  (with-output-to-temp-buffer "*comment-tags*"
+    (print "testing"))
+  (message "comment-tags/list-tags-buffer"))
+
+;;;###autoload
+(defun comment-tags-list-tags-project ()
+  ;; TODO: finish this
+  "List all tags in the current vcs project."
+  (interactive)
+  (message "comment-tags/list-tags-project"))
+
+;;;###autoload
+(defun comment-tags-list-tags-dir ()
+  ;; TODO: finish this
+  "List all tags in the current dir."
+  (interactive)
+  (message "comment-tags/list-tags-dir"))
+
+;; TODO: after list
+;;;###autoload
+(defun comment-tags-find-tags-buffer (&optional args)
+  ;; TODO: finish this
+  "List tags with ARGS in the current buffer."
+  (interactive)
+  (message "comment-tags/find-tags-buffer"))
+
+;;
 (defun comment-tags/enable ()
   "Enable comment-tags-mode."
   (set (make-local-variable 'syntax-propertize-function)
