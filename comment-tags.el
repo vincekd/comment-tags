@@ -30,7 +30,6 @@
 ;;; TODO:
 ;; + find all instances in buffer/project/directory and list them
 ;; + allow differrent fonts for different `comment-tags/keywords'
-;; + keymap to search/list tags
 ;;
 ;;; Code:
 
@@ -216,6 +215,7 @@ Mark with `comment-tags/highlight' prop."
   (set (make-local-variable 'syntax-propertize-function) nil)
   (font-lock-remove-keywords nil comment-tags/font-lock-keywords))
 
+
 ;;; vars
 (defvar comment-tags/font-lock-keywords
   `((comment-tags/highlight-tags 1 font-lock-comment-tags-face t)))
@@ -237,6 +237,7 @@ Mark with `comment-tags/highlight' prop."
     (define-key map comment-tags/keymap-prefix 'comment-tags/command-map)
     map)
   "Keymap for Comment-Tags mode.")
+
 
 ;;;###autoload
 (define-minor-mode comment-tags-mode
