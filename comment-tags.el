@@ -29,7 +29,7 @@
 ;;
 ;;; TODO:
 ;; + find all instances in project and list them
-;; + allow differrent fonts for different COMMENT-TAGS/KEYWORDS
+;; + allow differrent fonts for different `comment-tags/keywords'
 ;; +
 ;;
 ;;; Code:
@@ -141,6 +141,17 @@ Mark with `comment-tags/highlight' prop."
               t)
           (comment-tags/highlight-tags limit))))))
 
+(defun comment-tags/enable ()
+  "Enable comment-tags-mode."
+  (set (make-local-variable 'syntax-propertize-function)
+       #'comment-tags/syntax-propertize-function)
+  (font-lock-add-keywords nil comment-tags/font-lock-keywords))
+
+(defun comment-tags/disable ()
+  "Disable comment-tags-mode."
+  (set (make-local-variable 'syntax-propertize-function) nil)
+  (font-lock-remove-keywords nil comment-tags/font-lock-keywords))
+
 ;;; vars
 (defvar comment-tags/font-lock-keywords
   `((comment-tags/highlight-tags 1 font-lock-comment-tags-face t)))
@@ -149,9 +160,10 @@ Mark with `comment-tags/highlight' prop."
 (define-minor-mode comment-tags-mode
   "Highlight and navigate comment tags."
   :lighter "Comment Tags"
-  (set (make-local-variable 'syntax-propertize-function)
-       #'comment-tags/syntax-propertize-function)
-  (font-lock-add-keywords nil comment-tags/font-lock-keywords))
+  (if comment-tags-mode
+      (comment-tags/enable)
+    (comment-tags/disable))
+  (font-lock-mode 1))
 
 (provide 'comment-tags)
 
