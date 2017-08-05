@@ -27,24 +27,13 @@
 
 ;;; Commentary:
 ;;
-;; TODO: finish this
+;;; TODO:
+;; + find all instances in project and list them
+;; + allow differrent fonts for different COMMENT-TAGS/KEYWORDS
+;; +
 ;;
 ;;; Code:
 
-;;(require 'rx)
-;;(require 'cl-lib)
-
-;; TODO: make minor mode
-;; (defun my-highlight-prog-words ()
-;;   (let* ((comment-opener `(or "//" "/*"))
-;;         (prog-specials
-;;          (rx (eval comment-opener) (0+ whitespace) (group (or "FIXME" "TODO" "BUG") ":"))
-;;          ;;(rx (syntax comment-start) (0+ whitespace) (group (or "FIXME" "TODO" "BUG") ":"))
-;;          ;;(rx word-start (group (or "FIXME" "TODO" "BUG") ":"))
-;;          ))
-;;     (font-lock-add-keywords nil
-;;                             `((,prog-specials 1 ',font-lock-warning-face t)))))
-;; (add-hook 'prog-mode-hook 'my-highlight-prog-words)
 
 ;;; customize
 (defgroup comment-tags nil
@@ -68,7 +57,7 @@
   :type 'boolean)
 
 (defcustom comment-tags/comment-start-only nil
-  "Only highlight and track tags that are the beginning of a comment"
+  "Only highlight and track tags that are the beginning of a comment."
   :group 'comment-tags
   :type 'boolean)
 
@@ -77,11 +66,11 @@
   :group 'comment-tags)
 
 (defcustom comment-tags/foreground-color "Red"
-  "Font foreground color"
+  "Font foreground color."
   :group 'comment-tags
   :type 'string)
 (defcustom comment-tags/background-color nil
-  "Font background color"
+  "Font background color."
   :group 'comment-tags
   :type 'string)
 
@@ -100,15 +89,19 @@
 
 ;;; funcs
 (defun comment-tags--join (list joiner)
+  "Helper function to join LIST of string with JOINER."
   (mapconcat 'identity list joiner))
 
 (defun comment-tags/make-regexp ()
-  (concat "\\<\\(\\(?:" (comment-tags--join comment-tags/keywords "\\|") "\\)"
-          (if comment-tags/require-colon
-              ":"
+  "Create regexp from `comment-tags/keywords'."
+  (concat "\\<\\(\\(?:" (comment-tags--join comment-tags/keywords "\\|") "\\):"
+          (if (not comment-tags/require-colon)
+              "?"
             "") "\\)"))
 
 (defun comment-tags/syntax-propertize-function (start end)
+  "Find tags in buffer between START and END.
+Mark with `comment-tags/highlight' prop."
   (let ((case-fold-search nil)
         (inhibit-modification-hooks t))
     (goto-char start)
@@ -135,6 +128,7 @@
         (put-text-property start-p end-p 'comment-tags/highlight (match-data))))))
 
 (defun comment-tags/highlight-tags (limit)
+  "Find areas marked with `comment-tags/highlight' and apply proper face within LIMIT."
   (let* ((pos (point))
          (chg (next-single-property-change pos 'comment-tags/highlight nil limit))
          (reg (comment-tags/make-regexp)))
