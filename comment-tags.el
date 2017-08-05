@@ -34,7 +34,9 @@
 ;;
 ;;; Code:
 
-(require 'ag)
+
+(require 'cl-lib)
+
 
 ;;; customize
 (defgroup comment-tags nil
@@ -72,6 +74,11 @@
   :type 'string)
 (defcustom comment-tags/background-color nil
   "Font background color."
+  :group 'comment-tags
+  :type 'string)
+
+(defcustom comment-tags/keymap-prefix (kbd "C-c c")
+  "Prefix for keymap."
   :group 'comment-tags
   :type 'string)
 
@@ -152,34 +159,43 @@ Mark with `comment-tags/highlight' prop."
           (comment-tags/highlight-tags limit))))))
 
 ;;;###autoload
-(defun comment-tags-list-tags-buffer ()
+(defun comment-tags/list-tags-buffer ()
   ;;TODO: finish this
   "List all tags in the current buffer."
   (interactive)
-  (with-output-to-temp-buffer comment-tags/temp-buffer-name
-    (with-current-buffer comment-tags/temp-buffer-name
-      ;;(switch-to-buffer-other-window comment-tags/temp-buffer-name)
-      (dolist (element comment-tags/buffer-tags)
-        ;;(princ (format "%s" (car element)))
-        (insert (format "%s" (car element)))
-        ))))
+  ;; (with-output-to-temp-buffer comment-tags/temp-buffer-name
+  ;;   (with-current-buffer comment-tags/temp-buffer-name
+  ;;     ;;(switch-to-buffer-other-window comment-tags/temp-buffer-name)
+  ;;     (dolist (element comment-tags/buffer-tags)
+  ;;       ;;(princ (format "%s" (car element)))
+  ;;       (insert (format "%s" (car element)))
+  ;;       )))
+  (with-temp-buffer
+    (dolist (element comment-tags/buffer-tags)
+      (insert (format "%s" (car element)))
+      ;;(insert (format "%s" (car element)))
+      ))
+    ;;(read comment-tags/buffer-tags))
+  )
 
-;;;###autoload
-(defun comment-tags-list-tags-project ()
-  ;; TODO: finish this
-  "List all tags in the current vcs project."
-  (interactive)
-  (message "comment-tags/list-tags-project"))
+;; ;;;###autoload
+;; (defun comment-tags/list-tags-project ()
+;;   ;; TODO: finish this
+;;   "List all tags in the current vcs project."
+;;   (interactive)
+;;   (with-output-to-temp-buffer comment-tags/temp-buffer-name
+;;     (ag-regexp (comment-tags/make-regexp)
+;;                (ag/project-root default-directory))))
 
-;;;###autoload
-(defun comment-tags-list-tags-dir ()
-  ;; TODO: finish this
-  "List all tags in the current dir."
-  (interactive)
-  ;;()
-  (message "comment-tags/list-tags-dir"))
+;; ;;;###autoload
+;; (defun comment-tags/list-tags-dir ()
+;;   ;; TODO: finish this
+;;   "List all tags in the current dir."
+;;   (interactive)
+;;   ;;()
+;;   (message "comment-tags/list-tags-dir"))
 
-;; TODO: after list
+;; TODO: search comments after tags?
 ;;;###autoload
 (defun comment-tags-find-tags-buffer (&optional args)
   ;; TODO: finish this
@@ -207,10 +223,29 @@ Mark with `comment-tags/highlight' prop."
 (defvar-local comment-tags/buffer-tags '()
   "List of tags accumulated in current buffer.")
 
+(defvar comment-tags/command-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "b") #'comment-tags/list-tags-buffer)
+    (define-key map (kbd "a") #'comment-tags/list-tags-buffers)
+    map)
+  "Command map.")
+(fset 'comment-tags/command-map comment-tags/command-map)
+
+(defvar comment-tags/mode-map
+  (let ((map (make-sparse-keymap)))
+    (message "map %s" comment-tags/command-map)
+    (define-key map comment-tags/keymap-prefix 'comment-tags/command-map)
+    map)
+  "Keymap for Comment-Tags mode.")
+
 ;;;###autoload
 (define-minor-mode comment-tags-mode
   "Highlight and navigate comment tags."
   :lighter "Comment Tags"
+  :group 'comment-tags
+  :require 'comment-tags
+  :global nil
+  :keymap comment-tags/mode-map
   (if comment-tags-mode
       (comment-tags/enable)
     (comment-tags/disable))
