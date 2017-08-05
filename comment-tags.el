@@ -28,7 +28,10 @@
 ;;; Commentary:
 ;;
 ;;; TODO:
-;; + find all instances in buffer/project/directory and list them
+;; + list all TAGS in current buffer
+;; + list all TAGS in all buffers
+;; + find TAGS in current buffer with keyword search
+;; + find TAGS in all buffers with keyword search
 ;; + allow differrent fonts for different `comment-tags/keywords'
 ;;
 ;;; Code:
@@ -138,9 +141,10 @@ Mark with `comment-tags/highlight' prop."
                       (buffer-substring-no-properties comment-start start-p)))))
         (put-text-property start-p end-p 'comment-tags/highlight (match-data))
         ;; push to local var for easy display
-        (push (list (buffer-substring (line-beginning-position) (line-end-position))
-                ;;TODO: add line num
-               (match-data))
+        (push (list (1+ (count-lines 1 start-p))
+                    end-p
+                    (buffer-substring (line-beginning-position) (line-end-position))
+                    (match-data))
               comment-tags/buffer-tags)))))
 
 (defun comment-tags/highlight-tags (limit)
@@ -159,23 +163,18 @@ Mark with `comment-tags/highlight' prop."
 
 ;;;###autoload
 (defun comment-tags/list-tags-buffer ()
-  ;;TODO: finish this
+  ;; TODO: make non-editable and allow clicking to jump to point
   "List all tags in the current buffer."
   (interactive)
-  ;; (with-output-to-temp-buffer comment-tags/temp-buffer-name
-  ;;   (with-current-buffer comment-tags/temp-buffer-name
-  ;;     ;;(switch-to-buffer-other-window comment-tags/temp-buffer-name)
-  ;;     (dolist (element comment-tags/buffer-tags)
-  ;;       ;;(princ (format "%s" (car element)))
-  ;;       (insert (format "%s" (car element)))
-  ;;       )))
-  (with-temp-buffer
-    (dolist (element comment-tags/buffer-tags)
-      (insert (format "%s" (car element)))
-      ;;(insert (format "%s" (car element)))
-      ))
-    ;;(read comment-tags/buffer-tags))
-  )
+  (let ((oldbuf (current-buffer)))
+    ;;(with-current-buffer (generate-new-buffer comment-tags/temp-buffer-name)
+    (with-current-buffer (get-buffer-create comment-tags/temp-buffer-name)
+      (dolist (element (nreverse (buffer-local-value 'comment-tags/buffer-tags oldbuf)))
+        (insert (format "%d:%d:\t%s\n"
+                        (car element)
+                        (nth 1 element)
+                        (nth 2 element))))
+      (display-buffer (current-buffer)))))
 
 ;; ;;;###autoload
 ;; (defun comment-tags/list-tags-project ()
@@ -196,7 +195,7 @@ Mark with `comment-tags/highlight' prop."
 
 ;; TODO: search comments after tags?
 ;;;###autoload
-(defun comment-tags-find-tags-buffer (&optional args)
+(defun comment-tags/find-tags-buffer (&optional args)
   ;; TODO: finish this
   "List tags with ARGS in the current buffer."
   (interactive)
@@ -227,13 +226,13 @@ Mark with `comment-tags/highlight' prop."
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "b") #'comment-tags/list-tags-buffer)
     (define-key map (kbd "a") #'comment-tags/list-tags-buffers)
+    (define-key map (kbd "s") #'comment-tags/find-tags-buffer)
     map)
   "Command map.")
 (fset 'comment-tags/command-map comment-tags/command-map)
 
 (defvar comment-tags/mode-map
   (let ((map (make-sparse-keymap)))
-    (message "map %s" comment-tags/command-map)
     (define-key map comment-tags/keymap-prefix 'comment-tags/command-map)
     map)
   "Keymap for Comment-Tags mode.")
