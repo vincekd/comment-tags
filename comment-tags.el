@@ -32,7 +32,7 @@
 ;; + find tags in current buffer with keyword search
 ;; + find tags in all buffers with keyword search
 ;; + allow differrent fonts for different `comment-tags/keywords'
-;; + jump to listed tags
+;; + allow input of buffer name in `comment-tags/list-tags-buffer'
 
 ;;; Code:
 
@@ -199,7 +199,6 @@ Mark with `comment-tags/highlight' prop."
 
 ;;;###autoload
 (defun comment-tags/list-tags-buffer ()
-  ;; TODO: allow clicking to jump to point
   "List all tags in the current buffer."
   (interactive)
   (let ((oldbuf (current-buffer))
