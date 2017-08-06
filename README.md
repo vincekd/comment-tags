@@ -1,4 +1,4 @@
-#COMMENT-TAGS.el
+## COMMENT-TAGS.el
 
 An emacs package to highlight and list comments tags such as 'TODO', 'FIXME', 'BUG', 'XXX', 'HACK', 'KLUDGE'.
 
@@ -20,6 +20,6 @@ Commands include:
   * `C-c c r` to filter to tags in all buffers by a word or phrase
 
 ## TODO:
-  * Ability to alter faces for different tags.
+  * Ability to customize faces/colors for different tags.
   * Filter tags with search of comment text.
 
