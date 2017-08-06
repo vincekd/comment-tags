@@ -74,6 +74,7 @@
   "Font foreground color."
   :group 'comment-tags
   :type 'string)
+
 (defcustom comment-tags/background-color nil
   "Font background color."
   :group 'comment-tags
