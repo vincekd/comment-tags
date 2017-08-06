@@ -105,28 +105,28 @@
   "Helper function to join LIST of string with JOINER."
   (mapconcat 'identity list joiner))
 
-(defun comment-tags/make-regexp ()
+(defun comment-tags--make-regexp ()
   "Create regexp from `comment-tags/keywords'."
   (concat "\\<\\(\\(?:" (comment-tags--join comment-tags/keywords "\\|") "\\):"
           (if (not comment-tags/require-colon)
               "?"
             "") "\\)"))
 
-(defun comment-tags/syntax-propertize-function (start end)
+(defun comment-tags--syntax-propertize-function (start end)
   "Find tags in buffer between START and END.
 Mark with `comment-tags/highlight' prop."
   (let ((case-fold-search nil)
         (inhibit-modification-hooks t))
     (goto-char start)
-    (setq-local comment-tags/buffer-tags '())
+    ;;(setq-local comment-tags/buffer-tags '())
     (remove-text-properties start end '(comment-tags/highlight))
     (funcall
      (syntax-propertize-rules
-      ((comment-tags/make-regexp)
-       (0 (ignore (comment-tags/find-tags)))))
+      ((comment-tags--make-regexp)
+       (0 (ignore (comment-tags--find-tags)))))
      start end)))
 
-(defun comment-tags/find-tags ()
+(defun comment-tags--find-tags ()
   "Highlight tags in var `comment-tags/keywords'."
   (save-excursion
     (let* ((end-p (point))
@@ -141,17 +141,18 @@ Mark with `comment-tags/highlight' prop."
                       (buffer-substring-no-properties comment-start start-p)))))
         (put-text-property start-p end-p 'comment-tags/highlight (match-data))
         ;; push to local var for easy display
-        (push (list (1+ (count-lines 1 start-p))
-                    end-p
-                    (buffer-substring (line-beginning-position) (line-end-position))
-                    (match-data))
-              comment-tags/buffer-tags)))))
+        ;; (push (list (1+ (count-lines 1 start-p))
+        ;;             end-p
+        ;;             (buffer-substring (line-beginning-position) (line-end-position))
+        ;;             (match-data))
+        ;;       comment-tags/buffer-tags)
+        ))))
 
-(defun comment-tags/highlight-tags (limit)
+(defun comment-tags--highlight-tags (limit)
   "Find areas marked with `comment-tags/highlight' and apply proper face within LIMIT."
   (let* ((pos (point))
          (chg (next-single-property-change pos 'comment-tags/highlight nil limit))
-         (reg (comment-tags/make-regexp)))
+         (reg (comment-tags--make-regexp)))
     (when (and chg (> chg pos))
       (goto-char chg)
       (let ((value (get-text-property chg 'comment-tags/highlight)))
@@ -159,7 +160,11 @@ Mark with `comment-tags/highlight' prop."
             (progn
               (set-match-data value)
               t)
-          (comment-tags/highlight-tags limit))))))
+          (comment-tags--highlight-tags limit))))))
+
+(defun comment-tags--buffer-tags (buffer)
+  "Find all comment tags in BUFFER."
+  '())
 
 ;;;###autoload
 (defun comment-tags/list-tags-buffer ()
@@ -167,14 +172,14 @@ Mark with `comment-tags/highlight' prop."
   "List all tags in the current buffer."
   (interactive)
   (let ((oldbuf (current-buffer)))
-    ;;(with-current-buffer (generate-new-buffer comment-tags/temp-buffer-name)
-    (with-current-buffer (get-buffer-create comment-tags/temp-buffer-name)
-      (dolist (element (nreverse (buffer-local-value 'comment-tags/buffer-tags oldbuf)))
-        (insert (format "%d:%d:\t%s\n"
+    (with-temp-buffer-window
+     comment-tags/temp-buffer-name nil nil
+     (pop-to-buffer comment-tags/temp-buffer-name)
+     (dolist (element (comment-tags--buffer-tags oldbuf))
+       (insert (format "%d:%d:\t%s\n"
                         (car element)
                         (nth 1 element)
-                        (nth 2 element))))
-      (display-buffer (current-buffer)))))
+                        (nth 2 element)))))))
 
 ;; ;;;###autoload
 ;; (defun comment-tags/list-tags-project ()
@@ -202,14 +207,13 @@ Mark with `comment-tags/highlight' prop."
   (message "comment-tags/find-tags-buffer"))
 
 ;;
-(defun comment-tags/enable ()
+(defun comment-tags--enable ()
   "Enable comment-tags-mode."
   (set (make-local-variable 'syntax-propertize-function)
-       #'comment-tags/syntax-propertize-function)
-  (set (make-local-variable 'comment-tags/buffer-tags) '())
+       #'comment-tags--syntax-propertize-function)
   (font-lock-add-keywords nil comment-tags/font-lock-keywords))
 
-(defun comment-tags/disable ()
+(defun comment-tags--disable ()
   "Disable comment-tags-mode."
   (set (make-local-variable 'syntax-propertize-function) nil)
   (font-lock-remove-keywords nil comment-tags/font-lock-keywords))
@@ -217,10 +221,8 @@ Mark with `comment-tags/highlight' prop."
 
 ;;; vars
 (defvar comment-tags/font-lock-keywords
-  `((comment-tags/highlight-tags 1 font-lock-comment-tags-face t)))
-
-(defvar-local comment-tags/buffer-tags '()
-  "List of tags accumulated in current buffer.")
+  `((comment-tags--highlight-tags 1 font-lock-comment-tags-face t))
+  "List of font-lock keywords to add to `default-keywords'")
 
 (defvar comment-tags/command-map
   (let ((map (make-sparse-keymap)))
@@ -247,8 +249,8 @@ Mark with `comment-tags/highlight' prop."
   :global nil
   :keymap comment-tags/mode-map
   (if comment-tags-mode
-      (comment-tags/enable)
-    (comment-tags/disable))
+      (comment-tags--enable)
+    (comment-tags--disable))
   (font-lock-mode 1))
 
 (provide 'comment-tags)
