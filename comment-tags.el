@@ -181,7 +181,7 @@ Mark with `comment-tags/highlight' prop."
 
 ;;;###autoload
 (defun comment-tags/list-tags-buffer ()
-  ;; TODO: make non-editable and allow clicking to jump to point
+  ;; TODO: allow clicking to jump to point
   "List all tags in the current buffer."
   (interactive)
   (let ((oldbuf (current-buffer))
@@ -191,27 +191,9 @@ Mark with `comment-tags/highlight' prop."
      (pop-to-buffer comment-tags/temp-buffer-name)
      (insert (format "** COMMENT TAGS in '%s' **\n\n" oldbuf-name))
      (dolist (element (comment-tags--buffer-tags oldbuf))
-       (message "element: %s" element)
        (insert (format "%d:\t%s\n"
                         (car element)
                         (nth 1 element)))))))
-
-;; ;;;###autoload
-;; (defun comment-tags/list-tags-project ()
-;;   ;; TODO: finish this
-;;   "List all tags in the current vcs project."
-;;   (interactive)
-;;   (with-output-to-temp-buffer comment-tags/temp-buffer-name
-;;     (ag-regexp (comment-tags/make-regexp)
-;;                (ag/project-root default-directory))))
-
-;; ;;;###autoload
-;; (defun comment-tags/list-tags-dir ()
-;;   ;; TODO: finish this
-;;   "List all tags in the current dir."
-;;   (interactive)
-;;   ;;()
-;;   (message "comment-tags/list-tags-dir"))
 
 ;; TODO: search comments after tags?
 ;;;###autoload
@@ -220,6 +202,30 @@ Mark with `comment-tags/highlight' prop."
   "List tags with ARGS in the current buffer."
   (interactive)
   (message "comment-tags/find-tags-buffer"))
+
+(defun comment-tags/list-tags-buffers ()
+  "List tags for all open buffers."
+  (interactive)
+  ;; list all buffers
+  ;; see if comment-tags is enabled in the buffer
+  ;; list results (with reference to buffer)
+  (with-temp-buffer-window
+   comment-tags/temp-buffer-name nil nil
+   (pop-to-buffer comment-tags/temp-buffer-name)
+   (dolist (buf (cl-remove-if-not
+                 (lambda (b)
+                   (with-current-buffer b
+                     (and (boundp 'comment-tags-mode) comment-tags-mode)))
+                 (buffer-list)))
+     (let ((buf-name (with-current-buffer buf (buffer-name)))
+           (tags (comment-tags--buffer-tags buf)))
+       (when (and tags )
+         (insert (format "** COMMENT TAGS in '%s' **\n\n" buf-name))
+         (dolist (element tags)
+           (insert (format "%d:\t%s\n"
+                           (car element)
+                           (nth 1 element))))
+         (insert "\n\n"))))))
 
 ;;
 (defun comment-tags--enable ()
