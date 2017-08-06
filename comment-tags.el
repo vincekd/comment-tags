@@ -4,9 +4,9 @@
 
 ;; Author: Vincent Dumas <vincekd@gmail.com>
 ;; URL: https://github.com/vincekd/comment-tags
-;; Keywords: project, convenience, comments, tags
+;; Keywords: convenience, comments, tags
 ;; Version: 0.1
-;; Package-Requires: ((emacs "24.1") (pkg-info "0.4"))
+;; Package-Requires: ((emacs "24.5") (pkg-info "0.4"))
 
 ;; This file is NOT part of GNU Emacs.
 
@@ -27,13 +27,13 @@
 
 ;;; Commentary:
 ;;
+
 ;;; TODO:
-;; + list all TAGS in current buffer
-;; + list all TAGS in all buffers
-;; + find TAGS in current buffer with keyword search
-;; + find TAGS in all buffers with keyword search
+;; + find tags in current buffer with keyword search
+;; + find tags in all buffers with keyword search
 ;; + allow differrent fonts for different `comment-tags/keywords'
-;;
+;; + jump to listed tags
+
 ;;; Code:
 
 
@@ -172,12 +172,30 @@ Mark with `comment-tags/highlight' prop."
           (setq out (append out (comment-tags--find-matched-tags chg)))))
       out)))
 
+
 (defun comment-tags--buffer-tags (buffer)
   "Find all comment tags in BUFFER."
   (with-current-buffer buffer
     (save-excursion
       (beginning-of-buffer)
       (comment-tags--find-matched-tags (point)))))
+
+
+(defun comment-tags--format-tag-string (tag)
+  "Format a TAG for insertion into the temp buffer."
+  (format "%d:\t%s\n" (car tag) (nth 1 tag)))
+
+
+(defun comment-tags--format-buffer-string (buf-name)
+  "Format a buffer BUF-NAME for separation in temp buffer."
+  (format "** COMMENT TAGS in '%s' **\n\n" buf-name))
+
+
+(defun comment-tags--open-buffer-at-line (buf line)
+  "Opens BUF at LINE."
+  (pop-to-buffer buf)
+  (goto-line line))
+
 
 ;;;###autoload
 (defun comment-tags/list-tags-buffer ()
@@ -189,11 +207,13 @@ Mark with `comment-tags/highlight' prop."
     (with-temp-buffer-window
      comment-tags/temp-buffer-name nil nil
      (pop-to-buffer comment-tags/temp-buffer-name)
-     (insert (format "** COMMENT TAGS in '%s' **\n\n" oldbuf-name))
+     (insert (comment-tags--format-buffer-string oldbuf-name))
      (dolist (element (comment-tags--buffer-tags oldbuf))
-       (insert (format "%d:\t%s\n"
-                        (car element)
-                        (nth 1 element)))))))
+       (insert-text-button
+        (comment-tags--format-tag-string element)
+        'action (lambda (a)
+                  (comment-tags--open-buffer-at-line oldbuf (car element))))))))
+
 
 ;; TODO: search comments after tags?
 ;;;###autoload
@@ -203,15 +223,15 @@ Mark with `comment-tags/highlight' prop."
   (interactive)
   (message "comment-tags/find-tags-buffer"))
 
+
+;;;###autoload
 (defun comment-tags/list-tags-buffers ()
   "List tags for all open buffers."
   (interactive)
-  ;; list all buffers
-  ;; see if comment-tags is enabled in the buffer
-  ;; list results (with reference to buffer)
   (with-temp-buffer-window
    comment-tags/temp-buffer-name nil nil
    (pop-to-buffer comment-tags/temp-buffer-name)
+   ;; list all buffers with comment-tags-mode enabled
    (dolist (buf (cl-remove-if-not
                  (lambda (b)
                    (with-current-buffer b
@@ -219,23 +239,25 @@ Mark with `comment-tags/highlight' prop."
                  (buffer-list)))
      (let ((buf-name (with-current-buffer buf (buffer-name)))
            (tags (comment-tags--buffer-tags buf)))
-       (when (and tags )
-         (insert (format "** COMMENT TAGS in '%s' **\n\n" buf-name))
+       (when tags
+         (insert (comment-tags--format-buffer-string buf-name))
          (dolist (element tags)
-           (insert (format "%d:\t%s\n"
-                           (car element)
-                           (nth 1 element))))
-         (insert "\n\n"))))))
+           (insert-text-button
+            (comment-tags--format-tag-string element)
+            'action (lambda (a)
+                      (comment-tags--open-buffer-at-line buf (car element)))))
+         (insert "\n"))))))
 
-;;
+
+;; enable/disable functions
 (defun comment-tags--enable ()
-  "Enable comment-tags-mode."
+  "Enable 'comment-tags-mode'."
   (set (make-local-variable 'syntax-propertize-function)
        #'comment-tags--syntax-propertize-function)
   (font-lock-add-keywords nil comment-tags/font-lock-keywords))
 
 (defun comment-tags--disable ()
-  "Disable comment-tags-mode."
+  "Disable 'comment-tags-mode'."
   (set (make-local-variable 'syntax-propertize-function) nil)
   (font-lock-remove-keywords nil comment-tags/font-lock-keywords))
 
@@ -243,7 +265,7 @@ Mark with `comment-tags/highlight' prop."
 ;;; vars
 (defvar comment-tags/font-lock-keywords
   `((comment-tags--highlight-tags 1 font-lock-comment-tags-face t))
-  "List of font-lock keywords to add to `default-keywords'")
+  "List of font-lock keywords to add to `default-keywords'.")
 
 (defvar comment-tags/command-map
   (let ((map (make-sparse-keymap)))
