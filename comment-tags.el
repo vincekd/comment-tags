@@ -137,16 +137,9 @@ Mark with `comment-tags/highlight' prop."
                  (or (not comment-tags/comment-start-only)
                      (save-match-data
                        (string-match
-                      (rx bol (0+ (not alphanumeric)) eol)
-                      (buffer-substring-no-properties comment-start start-p)))))
-        (put-text-property start-p end-p 'comment-tags/highlight (match-data))
-        ;; push to local var for easy display
-        ;; (push (list (1+ (count-lines 1 start-p))
-        ;;             end-p
-        ;;             (buffer-substring (line-beginning-position) (line-end-position))
-        ;;             (match-data))
-        ;;       comment-tags/buffer-tags)
-        ))))
+                        (rx bol (0+ (not alphanumeric)) eol)
+                        (buffer-substring-no-properties comment-start start-p)))))
+        (put-text-property start-p end-p 'comment-tags/highlight (match-data))))))
 
 (defun comment-tags--highlight-tags (limit)
   "Find areas marked with `comment-tags/highlight' and apply proper face within LIMIT."
@@ -162,24 +155,45 @@ Mark with `comment-tags/highlight' prop."
               t)
           (comment-tags--highlight-tags limit))))))
 
+(defun comment-tags--find-matched-tags (start)
+  "Utility function to find list of text marked with `comment-tags/highlight' from START on."
+  (save-excursion
+    (goto-char start)
+    (let ((chg (next-single-property-change start 'comment-tags/highlight nil nil))
+          (out (list)))
+      (when (and chg (> chg start))
+        (let ((val (get-text-property chg 'comment-tags/highlight)))
+          (when val
+            (push (list
+                   (count-lines 1 chg)
+                   (buffer-substring (line-beginning-position) (line-end-position)))
+                  out))
+          (setq out (append out (comment-tags--find-matched-tags chg)))))
+      out)))
+
 (defun comment-tags--buffer-tags (buffer)
   "Find all comment tags in BUFFER."
-  '())
+  (with-current-buffer buffer
+    (save-excursion
+      (beginning-of-buffer)
+      (comment-tags--find-matched-tags (point)))))
 
 ;;;###autoload
 (defun comment-tags/list-tags-buffer ()
   ;; TODO: make non-editable and allow clicking to jump to point
   "List all tags in the current buffer."
   (interactive)
-  (let ((oldbuf (current-buffer)))
+  (let ((oldbuf (current-buffer))
+        (oldbuf-name (buffer-name)))
     (with-temp-buffer-window
      comment-tags/temp-buffer-name nil nil
      (pop-to-buffer comment-tags/temp-buffer-name)
+     (insert (format "** COMMENT TAGS in '%s' **\n\n" oldbuf-name))
      (dolist (element (comment-tags--buffer-tags oldbuf))
-       (insert (format "%d:%d:\t%s\n"
+       (message "element: %s" element)
+       (insert (format "%d:\t%s\n"
                         (car element)
-                        (nth 1 element)
-                        (nth 2 element)))))))
+                        (nth 1 element)))))))
 
 ;; ;;;###autoload
 ;; (defun comment-tags/list-tags-project ()
