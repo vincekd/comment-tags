@@ -162,6 +162,7 @@ Mark with `comment-tags/highlight' prop."
     (let ((chg (next-single-property-change start 'comment-tags/highlight nil nil))
           (out (list)))
       (when (and chg (> chg start))
+        (goto-char chg)
         (let ((val (get-text-property chg 'comment-tags/highlight)))
           (when val
             (push (list
