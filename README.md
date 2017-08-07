@@ -5,10 +5,14 @@ An emacs package to highlight and list comment tags such as 'TODO', 'FIXME', 'BU
 ## Customizations
 Ability to customize highlight colors and keywords list.
 
-  * `comment-tags/keywords` to alter the list of highlighted/searched words.
-  * `comment-tags/require-colon` to require a matching colon.
-  * `comment-tags/comment-start-only` to only match tags at the beginning of a comment.
-  * `comment-tags/keymap-prefix` to alter the default prefix.
+  * `comment-tags-keywords` to alter the list of highlighted/searched words.
+  * `comment-tags-require-colon` to require a matching colon (default t).
+  * `comment-tags-comment-start-only` to only match tags at the beginning of a comment (default nil).
+  * `comment-tags-keymap-prefix` to alter the default prefix (default `C-c c`.
+  * `comment-tags-case-sensitive` to toggle case-sensitivity (default t).
+  * `comment-tags-foreground-color` to set default color for keywords.
+  * `comment-tags-background-color` to set default background color for keywords.
+  * `comment-tags-keyword-colors` to alter colors for keywords.
 
 ## Usage
 The prefix for commands is `C-c c`.
