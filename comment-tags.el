@@ -159,9 +159,11 @@ Mark with `comment-tags-highlight' prop."
 (defun comment-tags--scan-buffer ()
   "Scan current buffer at startup to populate file with `comment-tags-highlight'."
   (save-excursion
-    (beginning-of-buffer)
-    (let ((case-fold-search (not comment-tags-case-sensitive)))
-      (comment-tags--scan (comment-tags--make-regexp)))))
+    (save-match-data
+      (with-silent-modifications
+        (beginning-of-buffer)
+        (let ((case-fold-search (not comment-tags-case-sensitive)))
+          (comment-tags--scan (comment-tags--make-regexp)))))))
 
 (defun comment-tags--find-matched-tags (&optional noprops)
   "Find list of text marked with `comment-tags-highlight' from point.
