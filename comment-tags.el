@@ -149,6 +149,19 @@ Mark with `comment-tags/highlight' prop."
               t)
           (comment-tags--highlight-tags limit))))))
 
+(defun comment-tags--scan (regexp)
+  "Scan current buffer from point with REGEXP."
+  (when (re-search-forward regexp nil t)
+    (goto-char (match-end 0))
+    (comment-tags--find-tags)
+    (comment-tags--scan regexp)))
+
+(defun comment-tags--scan-buffer ()
+  "Scan current buffer at startup to populate file with `comment-tags/highlight'."
+  (save-excursion
+    (beginning-of-buffer)
+    (comment-tags--scan (comment-tags--make-regexp))))
+
 (defun comment-tags--find-matched-tags (start)
   "Utility function to find list of text marked with `comment-tags/highlight' from START on."
   (save-excursion
@@ -255,7 +268,8 @@ Mark with `comment-tags/highlight' prop."
   "Enable 'comment-tags-mode'."
   (set (make-local-variable 'syntax-propertize-function)
        #'comment-tags--syntax-propertize-function)
-  (font-lock-add-keywords nil comment-tags/font-lock-keywords))
+  (font-lock-add-keywords nil comment-tags/font-lock-keywords)
+  (comment-tags--scan-buffer))
 
 (defun comment-tags--disable ()
   "Disable 'comment-tags-mode'."
