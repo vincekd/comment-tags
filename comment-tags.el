@@ -1,4 +1,4 @@
-;;; comment-tags.el --- Highlight and navigate comment tags like TODO, FIXME, etc -*- lexical-binding: t -*-
+;;; comment-tags.el --- Highlight & navigate comment tags like 'TODO'. -*- lexical-binding: t -*-
 
 ;; Copyright © 2017 Vincent Dumas <vincekd@gmail.com>
 
@@ -26,12 +26,14 @@
 ;; Boston, MA 02110-1301, USA.
 
 ;;; Commentary:
-;;
+;; A minor mode to highlight, track, and navigate comment tags like
+;; TODO, FIXME, etc. It scans the buffer to allow easily jumping
+;; between comment tags, as well as viewing all tags in one view.
 
 ;;; TODO:
 ;; + find tags in all buffers with keyword search
-;; + allow differrent fonts for different `comment-tags/keywords'
-;; + allow input of buffer name in `comment-tags/list-tags-buffer'
+;; + allow differrent fonts for different `comment-tags-keywords'
+;; + allow input of buffer name in `comment-tags-list-tags-buffer'
 
 ;;; Code:
 
@@ -43,9 +45,9 @@
 (defgroup comment-tags nil
   "Highlight and navigate comment tags."
   :group 'tools
-  :link '(url-link :tag "Github" "https//github.com/vincekd/comment-tags"))
+  :link '(url-link :tag "Github" "https://github.com/vincekd/comment-tags"))
 
-(defcustom comment-tags/keywords
+(defcustom comment-tags-keywords
   '("TODO"
     "FIXME"
     "BUG"
@@ -56,42 +58,42 @@
   :group 'comment-tags
   :type '(repeat string))
 
-(defcustom comment-tags/require-colon t
+(defcustom comment-tags-require-colon t
   "Require colon after tags."
   :group 'comment-tags
   :type 'boolean)
 
-(defcustom comment-tags/case-sensitive t
+(defcustom comment-tags-case-sensitive t
   "Require tags to be case sensitive."
   :group 'comment-tags
   :type 'boolean)
 
-(defcustom comment-tags/comment-start-only nil
+(defcustom comment-tags-comment-start-only nil
   "Only highlight and track tags that are the beginning of a comment."
   :group 'comment-tags
   :type 'boolean)
 
-(defcustom comment-tags/foreground-color "Red"
+(defcustom comment-tags-foreground-color "Red"
   "Font foreground color."
   :group 'comment-tags
   :type 'string)
 
-(defcustom comment-tags/background-color nil
+(defcustom comment-tags-background-color nil
   "Font background color."
   :group 'comment-tags
   :type 'string)
 
-(defcustom comment-tags/keymap-prefix (kbd "C-c c")
+(defcustom comment-tags-keymap-prefix (kbd "C-c c")
   "Prefix for keymap."
   :group 'comment-tags
   :type 'string)
 
-(defconst comment-tags/temp-buffer-name "*comment-tags*"
+(defconst comment-tags-temp-buffer-name "*comment-tags*"
   "Name for temp buffers to list tags.")
 
-(defface comment-tags/face
-  `((t :foreground ,comment-tags/foreground-color
-       :background ,comment-tags/background-color
+(defface comment-tags-face
+  `((t :foreground ,comment-tags-foreground-color
+       :background ,comment-tags-background-color
        :weight bold
        :underline nil))
   "Font face for highlighted tags."
@@ -100,19 +102,18 @@
 
 ;;; funcs
 (defun comment-tags--make-regexp ()
-  "Create regexp from `comment-tags/keywords'."
-  (concat "\\<\\(\\(?:" (mapconcat 'identity comment-tags/keywords "\\|") "\\):"
-          (if (not comment-tags/require-colon)
+  "Create regexp from `comment-tags-keywords'."
+  (concat "\\<\\(\\(?:" (mapconcat 'identity comment-tags-keywords "\\|") "\\):"
+          (if (not comment-tags-require-colon)
               "?"
             "") "\\)"))
 
 (defun comment-tags--syntax-propertize-function (start end)
   "Find tags in buffer between START and END.
-Mark with `comment-tags/highlight' prop."
-  (let ((case-fold-search (not comment-tags/case-sensitive)))
+Mark with `comment-tags-highlight' prop."
+  (let ((case-fold-search (not comment-tags-case-sensitive)))
     (goto-char start)
-    ;;(setq-local comment-tags/buffer-tags '())
-    (remove-text-properties start end '(comment-tags/highlight))
+    (remove-text-properties start end '(comment-tags-highlight))
     (funcall
      (syntax-propertize-rules
       ((comment-tags--make-regexp)
@@ -120,28 +121,28 @@ Mark with `comment-tags/highlight' prop."
      start end)))
 
 (defun comment-tags--find-tags ()
-  "Highlight tags in var `comment-tags/keywords'."
+  "Highlight tags in var `comment-tags-keywords'."
   (save-excursion
     (let* ((end-p (point))
            (start-p (match-beginning 0))
            (in-comment (and (nth 4 (syntax-ppss start-p)) (nth 4 (syntax-ppss end-p))))
            (comment-start (nth 8 (syntax-ppss start-p))))
       (when (and in-comment
-                 (or (not comment-tags/comment-start-only)
+                 (or (not comment-tags-comment-start-only)
                      (save-match-data
                        (string-match
                         (rx bol (0+ (not alphanumeric)) eol)
                         (buffer-substring-no-properties comment-start start-p)))))
-        (put-text-property start-p end-p 'comment-tags/highlight (match-data))))))
+        (put-text-property start-p end-p 'comment-tags-highlight (match-data))))))
 
 (defun comment-tags--highlight-tags (limit)
-  "Find areas marked with `comment-tags/highlight' and apply proper face within LIMIT."
+  "Find areas marked with `comment-tags-highlight' and apply proper face within LIMIT."
   (let* ((pos (point))
-         (chg (next-single-property-change pos 'comment-tags/highlight nil limit))
+         (chg (next-single-property-change pos 'comment-tags-highlight nil limit))
          (reg (comment-tags--make-regexp)))
     (when (and chg (> chg pos))
       (goto-char chg)
-      (let ((value (get-text-property chg 'comment-tags/highlight)))
+      (let ((value (get-text-property chg 'comment-tags-highlight)))
         (if value
             (progn
               (set-match-data value)
@@ -156,20 +157,21 @@ Mark with `comment-tags/highlight' prop."
     (comment-tags--scan regexp)))
 
 (defun comment-tags--scan-buffer ()
-  "Scan current buffer at startup to populate file with `comment-tags/highlight'."
+  "Scan current buffer at startup to populate file with `comment-tags-highlight'."
   (save-excursion
     (beginning-of-buffer)
-    (let ((case-fold-search (not comment-tags/case-sensitive)))
+    (let ((case-fold-search (not comment-tags-case-sensitive)))
       (comment-tags--scan (comment-tags--make-regexp)))))
 
 (defun comment-tags--find-matched-tags (&optional noprops)
-  "Utility function to find list of text marked with `comment-tags/highlight' from point."
+  "Find list of text marked with `comment-tags-highlight' from point.
+If NOPROPS is non-nil, then return string without text properties."
   (let* ((pos (point))
-        (chg (next-single-property-change pos 'comment-tags/highlight nil nil))
+        (chg (next-single-property-change pos 'comment-tags-highlight nil nil))
         (out (list)))
     (when (and chg (> chg pos))
       (goto-char chg)
-      (let ((val (get-text-property chg 'comment-tags/highlight)))
+      (let ((val (get-text-property chg 'comment-tags-highlight)))
         (when val
           (push (list
                  (count-lines 1 chg)
@@ -182,11 +184,16 @@ Mark with `comment-tags/highlight' prop."
 
 
 (defun comment-tags--buffer-tags (buffer &optional noprops)
-  "Find all comment tags in BUFFER."
+  "Find all comment tags in BUFFER.
+If NOPROPS is non-nil, return strings without text properties."
   (with-current-buffer buffer
     (save-excursion
       (beginning-of-buffer)
-      (comment-tags--find-matched-tags noprops))))
+      (cl-remove-duplicates
+       (comment-tags--find-matched-tags noprops)
+       :test (lambda (x y)
+               (or (null y) (equal (car x) (car y))))
+       :from-end t))))
 
 
 (defun comment-tags--format-tag-string (tag)
@@ -206,14 +213,14 @@ Mark with `comment-tags/highlight' prop."
 
 
 ;;;###autoload
-(defun comment-tags/list-tags-buffer ()
+(defun comment-tags-list-tags-buffer ()
   "List all tags in the current buffer."
   (interactive)
   (let ((oldbuf (current-buffer))
         (oldbuf-name (buffer-name)))
     (with-temp-buffer-window
-     comment-tags/temp-buffer-name nil nil
-     (pop-to-buffer comment-tags/temp-buffer-name)
+     comment-tags-temp-buffer-name nil nil
+     (pop-to-buffer comment-tags-temp-buffer-name)
      (insert (comment-tags--format-buffer-string oldbuf-name))
      (dolist (element (comment-tags--buffer-tags oldbuf))
        (insert-text-button
@@ -223,7 +230,7 @@ Mark with `comment-tags/highlight' prop."
 
 
 ;;;###autoload
-(defun comment-tags/find-tags-buffer ()
+(defun comment-tags-find-tags-buffer ()
   "Complete tags in the current buffer and jump to line."
   (interactive)
   (let* ((tags (comment-tags--buffer-tags (current-buffer) t))
@@ -240,12 +247,12 @@ Mark with `comment-tags/highlight' prop."
 
 
 ;;;###autoload
-(defun comment-tags/list-tags-buffers ()
+(defun comment-tags-list-tags-buffers ()
   "List tags for all open buffers."
   (interactive)
   (with-temp-buffer-window
-   comment-tags/temp-buffer-name nil nil
-   (pop-to-buffer comment-tags/temp-buffer-name)
+   comment-tags-temp-buffer-name nil nil
+   (pop-to-buffer comment-tags-temp-buffer-name)
    ;; list all buffers with comment-tags-mode enabled
    (dolist (buf (cl-remove-if-not
                  (lambda (b)
@@ -269,32 +276,32 @@ Mark with `comment-tags/highlight' prop."
   "Enable 'comment-tags-mode'."
   (set (make-local-variable 'syntax-propertize-function)
        #'comment-tags--syntax-propertize-function)
-  (font-lock-add-keywords nil comment-tags/font-lock-keywords)
+  (font-lock-add-keywords nil comment-tags-font-lock-keywords)
   (comment-tags--scan-buffer))
 
 (defun comment-tags--disable ()
   "Disable 'comment-tags-mode'."
   (set (make-local-variable 'syntax-propertize-function) nil)
-  (font-lock-remove-keywords nil comment-tags/font-lock-keywords))
+  (font-lock-remove-keywords nil comment-tags-font-lock-keywords))
 
 
 ;;; vars
-(defvar comment-tags/font-lock-keywords
-  `((comment-tags--highlight-tags 1 'comment-tags/face t))
+(defvar comment-tags-font-lock-keywords
+  `((comment-tags--highlight-tags 1 'comment-tags-face t))
   "List of font-lock keywords to add to `default-keywords'.")
 
-(defvar comment-tags/command-map
+(defvar comment-tags-command-map
   (let ((map (make-sparse-keymap)))
-    (define-key map (kbd "b") #'comment-tags/list-tags-buffer)
-    (define-key map (kbd "a") #'comment-tags/list-tags-buffers)
-    (define-key map (kbd "s") #'comment-tags/find-tags-buffer)
+    (define-key map (kbd "b") #'comment-tags-list-tags-buffer)
+    (define-key map (kbd "a") #'comment-tags-list-tags-buffers)
+    (define-key map (kbd "s") #'comment-tags-find-tags-buffer)
     map)
   "Command map.")
-(fset 'comment-tags/command-map comment-tags/command-map)
+(fset 'comment-tags-command-map comment-tags-command-map)
 
-(defvar comment-tags/mode-map
+(defvar comment-tags-mode-map
   (let ((map (make-sparse-keymap)))
-    (define-key map comment-tags/keymap-prefix 'comment-tags/command-map)
+    (define-key map comment-tags-keymap-prefix 'comment-tags-command-map)
     map)
   "Keymap for Comment-Tags mode.")
 
@@ -306,7 +313,7 @@ Mark with `comment-tags/highlight' prop."
   :group 'comment-tags
   :require 'comment-tags
   :global nil
-  :keymap comment-tags/mode-map
+  :keymap comment-tags-mode-map
   (if comment-tags-mode
       (comment-tags--enable)
     (comment-tags--disable))
