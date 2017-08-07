@@ -1,6 +1,6 @@
 ## COMMENT-TAGS.el
 
-An emacs package to highlight and list comments tags such as 'TODO', 'FIXME', 'BUG', 'XXX', 'HACK', 'KLUDGE'.
+An emacs package to highlight and list comment tags such as 'TODO', 'FIXME', 'BUG', 'XXX', 'HACK', 'KLUDGE'.
 
 ## Customizations
 Ability to customize highlight colors and keywords list.

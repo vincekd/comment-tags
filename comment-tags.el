@@ -51,7 +51,8 @@
     "FIXME"
     "BUG"
     "HACK"
-    "XXX")
+    "XXX"
+    "KLUDGE")
   "Keywords to highlight and track."
   :group 'comment-tags
   :type '(repeat string))
@@ -65,10 +66,6 @@
   "Only highlight and track tags that are the beginning of a comment."
   :group 'comment-tags
   :type 'boolean)
-
-(defcustom font-lock-comment-tags-face 'font-lock-comment-tags-face
-  "Face for highlighting tags."
-  :group 'comment-tags)
 
 (defcustom comment-tags/foreground-color "Red"
   "Font foreground color."
@@ -88,18 +85,14 @@
 (defconst comment-tags/temp-buffer-name "*comment-tags*"
   "Name for temp buffers to list tags.")
 
-(make-face 'font-lock-comment-tags-face)
-(modify-face 'font-lock-comment-tags-face
-             comment-tags/foreground-color
-             comment-tags/background-color
-             nil t nil t nil nil)
-;; (defface comment-tags/face
-;;   '((t :foreground "red" ;;'comment-tags/foreground-color
-;;        :background nil ;;'comment-tags/background-color
-;;        :weight bold
-;;        :underline nil))
-;;   "Font face for highlighted tags."
-;;   :group 'comment-tags)
+(defface comment-tags/face
+  `((t :foreground ,comment-tags/foreground-color
+       :background ,comment-tags/background-color
+       :weight bold
+       :underline nil))
+  "Font face for highlighted tags."
+  :group 'comment-tags)
+
 
 ;;; funcs
 (defun comment-tags--join (list joiner)
@@ -264,7 +257,7 @@ Mark with `comment-tags/highlight' prop."
 
 ;;; vars
 (defvar comment-tags/font-lock-keywords
-  `((comment-tags--highlight-tags 1 font-lock-comment-tags-face t))
+  `((comment-tags--highlight-tags 1 'comment-tags/face t))
   "List of font-lock keywords to add to `default-keywords'.")
 
 (defvar comment-tags/command-map
