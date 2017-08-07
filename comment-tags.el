@@ -29,7 +29,6 @@
 ;;
 
 ;;; TODO:
-;; + find tags in current buffer with keyword search
 ;; + find tags in all buffers with keyword search
 ;; + allow differrent fonts for different `comment-tags/keywords'
 ;; + allow input of buffer name in `comment-tags/list-tags-buffer'
@@ -95,13 +94,9 @@
 
 
 ;;; funcs
-(defun comment-tags--join (list joiner)
-  "Helper function to join LIST of string with JOINER."
-  (mapconcat 'identity list joiner))
-
 (defun comment-tags--make-regexp ()
   "Create regexp from `comment-tags/keywords'."
-  (concat "\\<\\(\\(?:" (comment-tags--join comment-tags/keywords "\\|") "\\):"
+  (concat "\\<\\(\\(?:" (mapconcat 'identity comment-tags/keywords "\\|") "\\):"
           (if (not comment-tags/require-colon)
               "?"
             "") "\\)"))
