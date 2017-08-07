@@ -27,7 +27,7 @@
 
 ;;; Commentary:
 ;; A minor mode to highlight, track, and navigate comment tags like
-;; TODO, FIXME, etc. It scans the buffer to allow easily jumping
+;; TODO, FIXME, etc.  It scans the buffer to allow easily jumping
 ;; between comment tags, as well as viewing all tags in one view.
 
 ;;; TODO:
@@ -39,7 +39,6 @@
 
 
 (require 'cl-lib)
-;;(require 'subr-x)
 
 
 ;;; customize
@@ -139,8 +138,7 @@ Mark with `comment-tags-highlight' prop."
 (defun comment-tags--highlight-tags (limit)
   "Find areas marked with `comment-tags-highlight' and apply proper face within LIMIT."
   (let* ((pos (point))
-         (chg (next-single-property-change pos 'comment-tags-highlight nil limit))
-         (reg (comment-tags--make-regexp)))
+         (chg (next-single-property-change pos 'comment-tags-highlight nil limit)))
     (when (and chg (> chg pos))
       (goto-char chg)
       (let ((value (get-text-property chg 'comment-tags-highlight)))
@@ -162,7 +160,7 @@ Mark with `comment-tags-highlight' prop."
   (save-excursion
     (save-match-data
       (with-silent-modifications
-        (beginning-of-buffer)
+        (goto-char (point-min))
         (let ((case-fold-search (not comment-tags-case-sensitive)))
           (comment-tags--scan (comment-tags--make-regexp)))))))
 
@@ -192,7 +190,7 @@ If NOPROPS is non-nil, then return string without text properties."
 If NOPROPS is non-nil, return strings without text properties."
   (with-current-buffer buffer
     (save-excursion
-      (beginning-of-buffer)
+      (goto-char (point-min))
       (cl-remove-duplicates
        (comment-tags--find-matched-tags noprops)
        :test (lambda (x y)
