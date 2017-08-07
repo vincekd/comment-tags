@@ -32,8 +32,11 @@
 
 ;;; TODO:
 ;; + find tags in all buffers with keyword search
-;; + allow differrent fonts for different `comment-tags-keywords'
 ;; + allow input of buffer name in `comment-tags-list-tags-buffer'
+
+
+;;; Changelog:
+;; + allow differrent fonts for different `comment-tags-keywords'
 
 ;;; Code:
 
@@ -53,7 +56,8 @@
     "BUG"
     "HACK"
     "XXX"
-    "KLUDGE")
+    "KLUDGE"
+    "DONE")
   "Keywords to highlight and track."
   :group 'comment-tags
   :type '(repeat string))
@@ -91,6 +95,19 @@
 (defconst comment-tags-temp-buffer-name "*comment-tags*"
   "Name for temp buffers to list tags.")
 
+(defcustom comment-tags-keyword-colors
+  '(("TODO" . "#28ABE3")
+    ("FIXME" . "#DB3340")
+    ("BUG" . "#DB3340")
+    ("HACK" . "#E8B71A")
+    ("XXX" . "#F7EAC8")
+    ("DONE" . "#1FDA9A")
+    ("KLUDGE" . "#E8B71A"))
+  "Colors for different keywords."
+  :group 'comment-tags
+  :type '(repeat (cons (string :tag "Keyword")
+                       (string :tag "Color"))))
+
 (defface comment-tags-face
   `((t :foreground ,comment-tags-foreground-color
        :background ,comment-tags-background-color
@@ -101,6 +118,14 @@
 
 
 ;;; funcs
+(defun comment-tags--get-face ()
+  "Find color for keyword."
+  (let* ((str (replace-regexp-in-string (rx ":" eol) "" (match-string 1)))
+         (color (cdr (assoc str comment-tags-keyword-colors))))
+    (if color
+        (list :inherit 'comment-tags-face :foreground color)
+      'comment-tags-face)))
+
 (defun comment-tags--make-regexp ()
   "Create regexp from `comment-tags-keywords'."
   (concat "\\<\\(\\(?:" (mapconcat 'identity comment-tags-keywords "\\|") "\\):"
@@ -289,7 +314,8 @@ If NOPROPS is non-nil, return strings without text properties."
 
 ;;; vars
 (defvar comment-tags-font-lock-keywords
-  `((comment-tags--highlight-tags 1 'comment-tags-face t))
+  ;;`((comment-tags--highlight-tags 1 'comment-tags-face t))
+  `((comment-tags--highlight-tags 1 (comment-tags--get-face) t))
   "List of font-lock keywords to add to `default-keywords'.")
 
 (defvar comment-tags-command-map
