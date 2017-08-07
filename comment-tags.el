@@ -208,13 +208,21 @@ Mark with `comment-tags/highlight' prop."
                   (comment-tags--open-buffer-at-line oldbuf (car element))))))))
 
 
-;; TODO: search comments after tags?
 ;;;###autoload
-(defun comment-tags/find-tags-buffer (&optional args)
-  ;; TODO: finish this
-  "List tags with ARGS in the current buffer."
+(defun comment-tags/find-tags-buffer ()
+  "Complete tags in the current buffer and jump to line."
   (interactive)
-  (message "comment-tags/find-tags-buffer"))
+  (let* ((tags (comment-tags--buffer-tags (current-buffer)))
+         (prompt "TAGS: ")
+         (choice (ido-completing-read
+                  prompt
+                  (mapcar (lambda (el)
+                            (format "%d: %s" (car el) (nth 1 el)))
+                            tags))))
+    (when choice
+      (string-match (rx bol (1+ digit)) choice)
+      (let ((num (string-to-number (match-string 0 choice))))
+        (comment-tags--open-buffer-at-line (current-buffer) num)))))
 
 
 ;;;###autoload
