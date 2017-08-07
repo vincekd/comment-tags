@@ -162,30 +162,31 @@ Mark with `comment-tags/highlight' prop."
     (beginning-of-buffer)
     (comment-tags--scan (comment-tags--make-regexp))))
 
-(defun comment-tags--find-matched-tags (start)
-  "Utility function to find list of text marked with `comment-tags/highlight' from START on."
-  (save-excursion
-    (goto-char start)
-    (let ((chg (next-single-property-change start 'comment-tags/highlight nil nil))
-          (out (list)))
-      (when (and chg (> chg start))
-        (goto-char chg)
-        (let ((val (get-text-property chg 'comment-tags/highlight)))
-          (when val
-            (push (list
-                   (count-lines 1 chg)
-                   (buffer-substring (line-beginning-position) (line-end-position)))
-                  out))
-          (setq out (append out (comment-tags--find-matched-tags chg)))))
-      out)))
+(defun comment-tags--find-matched-tags (&optional noprops)
+  "Utility function to find list of text marked with `comment-tags/highlight' from point."
+  (let* ((pos (point))
+        (chg (next-single-property-change pos 'comment-tags/highlight nil nil))
+        (out (list)))
+    (when (and chg (> chg pos))
+      (goto-char chg)
+      (let ((val (get-text-property chg 'comment-tags/highlight)))
+        (when val
+          (push (list
+                 (count-lines 1 chg)
+                 (if (not noprops)
+                     (buffer-substring (line-beginning-position) (line-end-position))
+                   (buffer-substring-no-properties (line-beginning-position) (line-end-position))))
+                out))
+        (setq out (append out (comment-tags--find-matched-tags noprops)))))
+    out))
 
 
-(defun comment-tags--buffer-tags (buffer)
+(defun comment-tags--buffer-tags (buffer &optional noprops)
   "Find all comment tags in BUFFER."
   (with-current-buffer buffer
     (save-excursion
       (beginning-of-buffer)
-      (comment-tags--find-matched-tags (point)))))
+      (comment-tags--find-matched-tags noprops))))
 
 
 (defun comment-tags--format-tag-string (tag)
@@ -225,7 +226,7 @@ Mark with `comment-tags/highlight' prop."
 (defun comment-tags/find-tags-buffer ()
   "Complete tags in the current buffer and jump to line."
   (interactive)
-  (let* ((tags (comment-tags--buffer-tags (current-buffer)))
+  (let* ((tags (comment-tags--buffer-tags (current-buffer) t))
          (prompt "TAGS: ")
          (choice (ido-completing-read
                   prompt
