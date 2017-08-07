@@ -39,6 +39,7 @@
 
 
 (require 'cl-lib)
+;;(require 'subr-x)
 
 
 ;;; customize
@@ -177,9 +178,10 @@ If NOPROPS is non-nil, then return string without text properties."
         (when val
           (push (list
                  (count-lines 1 chg)
-                 (if (not noprops)
-                     (buffer-substring (line-beginning-position) (line-end-position))
-                   (buffer-substring-no-properties (line-beginning-position) (line-end-position))))
+                 (string-trim
+                  (if (not noprops)
+                      (buffer-substring (line-beginning-position) (line-end-position))
+                    (buffer-substring-no-properties (line-beginning-position) (line-end-position)))))
                 out))
         (setq out (append out (comment-tags--find-matched-tags noprops)))))
     out))
