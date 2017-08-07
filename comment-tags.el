@@ -61,6 +61,11 @@
   :group 'comment-tags
   :type 'boolean)
 
+(defcustom comment-tags/case-sensitive t
+  "Require tags to be case sensitive."
+  :group 'comment-tags
+  :type 'boolean)
+
 (defcustom comment-tags/comment-start-only nil
   "Only highlight and track tags that are the beginning of a comment."
   :group 'comment-tags
@@ -104,8 +109,7 @@
 (defun comment-tags--syntax-propertize-function (start end)
   "Find tags in buffer between START and END.
 Mark with `comment-tags/highlight' prop."
-  (let ((case-fold-search nil)
-        (inhibit-modification-hooks t))
+  (let ((case-fold-search (not comment-tags/case-sensitive)))
     (goto-char start)
     ;;(setq-local comment-tags/buffer-tags '())
     (remove-text-properties start end '(comment-tags/highlight))
@@ -155,7 +159,8 @@ Mark with `comment-tags/highlight' prop."
   "Scan current buffer at startup to populate file with `comment-tags/highlight'."
   (save-excursion
     (beginning-of-buffer)
-    (comment-tags--scan (comment-tags--make-regexp))))
+    (let ((case-fold-search (not comment-tags/case-sensitive)))
+      (comment-tags--scan (comment-tags--make-regexp)))))
 
 (defun comment-tags--find-matched-tags (&optional noprops)
   "Utility function to find list of text marked with `comment-tags/highlight' from point."
