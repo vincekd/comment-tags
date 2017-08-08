@@ -28,9 +28,8 @@ Commands include:
 
 ## Screenshots
 
-List tags in buffer (click to jump to point).
+List tags in buffer and select to jump to point.
 ![screenshot](screenshots/buffer-list.png)
 
-Search tags in buffer (by keywords on line) and jump to point.
+Search tags in buffer (with ido search of line text) and jump to point.
 ![screenshot](screenshots/buffer-search.png)
-
