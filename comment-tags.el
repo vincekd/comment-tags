@@ -121,7 +121,10 @@
 (defun comment-tags--get-face ()
   "Find color for keyword."
   (let* ((str (replace-regexp-in-string (rx ":" eol) "" (match-string 1)))
-         (color (cdr (assoc str comment-tags-keyword-colors))))
+         (color (or
+                 (cdr (assoc str comment-tags-keyword-colors))
+                 (unless comment-tags-case-sensitive
+                   (cdr (assoc (upcase str) comment-tags-keyword-colors))))))
     (if color
         (list :inherit 'comment-tags-face :foreground color)
       'comment-tags-face)))
@@ -133,52 +136,24 @@
               "?"
             "") "\\)"))
 
-(defun comment-tags--syntax-propertize-function (start end)
-  "Find tags in buffer between START and END.
-Mark with `comment-tags-highlight' prop."
-  (let ((case-fold-search (not comment-tags-case-sensitive)))
-    (goto-char start)
-    (remove-text-properties start end '(comment-tags-highlight))
-    (funcall
-     (syntax-propertize-rules
-      ((comment-tags--make-regexp)
-       (0 (ignore (comment-tags--find-tags)))))
-     start end)))
-
-(defun comment-tags--find-tags ()
-  "Highlight tags in var `comment-tags-keywords'."
-  (save-excursion
-    (let* ((end-p (point))
-           (start-p (match-beginning 0))
-           (in-comment (and (nth 4 (syntax-ppss start-p)) (nth 4 (syntax-ppss end-p))))
-           (comment-start (nth 8 (syntax-ppss start-p))))
-      (when (and in-comment
-                 (or (not comment-tags-comment-start-only)
-                     (save-match-data
-                       (string-match
-                        (rx bol (0+ (not alphanumeric)) eol)
-                        (buffer-substring-no-properties comment-start start-p)))))
-        (put-text-property start-p end-p 'comment-tags-highlight (match-data))))))
-
 (defun comment-tags--highlight-tags (limit)
   "Find areas marked with `comment-tags-highlight' and apply proper face within LIMIT."
-  (let* ((pos (point))
-         (chg (next-single-property-change pos 'comment-tags-highlight nil limit)))
-    (when (and chg (> chg pos))
-      (goto-char chg)
-      (let ((value (get-text-property chg 'comment-tags-highlight)))
-        (if value
+  (let ((case-fold-search (not comment-tags-case-sensitive)))
+    (remove-text-properties (point) (or limit (point-max)) '(comment-tags-highlight))
+    (let ((pos (point))
+          (chg (re-search-forward (comment-tags--make-regexp) limit t)))
+      (when (and chg (> chg pos))
+        (if (nth 4 (syntax-ppss chg))
             (progn
-              (set-match-data value)
+              (with-silent-modifications
+                (put-text-property (match-beginning 0) (match-end 0) 'comment-tags-highlight (match-data)))
               t)
           (comment-tags--highlight-tags limit))))))
 
-(defun comment-tags--scan (regexp)
+(defun comment-tags--scan ()
   "Scan current buffer from point with REGEXP."
-  (when (re-search-forward regexp nil t)
-    (goto-char (match-end 0))
-    (comment-tags--find-tags)
-    (comment-tags--scan regexp)))
+  (when (comment-tags--highlight-tags nil)
+    (comment-tags--scan)))
 
 (defun comment-tags--scan-buffer ()
   "Scan current buffer at startup to populate file with `comment-tags-highlight'."
@@ -187,7 +162,7 @@ Mark with `comment-tags-highlight' prop."
       (with-silent-modifications
         (goto-char (point-min))
         (let ((case-fold-search (not comment-tags-case-sensitive)))
-          (comment-tags--scan (comment-tags--make-regexp)))))))
+          (comment-tags--scan))))))
 
 (defun comment-tags--find-matched-tags (&optional noprops)
   "Find list of text marked with `comment-tags-highlight' from point.
@@ -301,14 +276,14 @@ If NOPROPS is non-nil, return strings without text properties."
 ;; enable/disable functions
 (defun comment-tags--enable ()
   "Enable 'comment-tags-mode'."
-  (set (make-local-variable 'syntax-propertize-function)
-       #'comment-tags--syntax-propertize-function)
+  ;; (set (make-local-variable 'syntax-propertize-function)
+  ;;      #'comment-tags--syntax-propertize-function)
   (font-lock-add-keywords nil comment-tags-font-lock-keywords)
   (comment-tags--scan-buffer))
 
 (defun comment-tags--disable ()
   "Disable 'comment-tags-mode'."
-  (set (make-local-variable 'syntax-propertize-function) nil)
+  ;;(set (make-local-variable 'syntax-propertize-function) nil)
   (font-lock-remove-keywords nil comment-tags-font-lock-keywords))
 
 
