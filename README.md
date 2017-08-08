@@ -25,3 +25,12 @@ Commands include:
 ## TODO:
   * Filter tags in all buffers with search of comment text.
 
+
+## Screenshots
+
+List tags in buffer (click to jump to point).
+![screenshot](screenshots/buffer-list.png)
+
+Search tags in buffer (by keywords on line) and jump to point.
+![screenshot](screenshots/buffer-search.png)
+
