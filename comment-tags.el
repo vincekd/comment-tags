@@ -92,9 +92,6 @@
   :group 'comment-tags
   :type 'string)
 
-(defconst comment-tags-temp-buffer-name "*comment-tags*"
-  "Name for temp buffers to list tags.")
-
 (defcustom comment-tags-keyword-colors
   '(("TODO" . "#28ABE3")
     ("FIXME" . "#DB3340")
@@ -116,6 +113,8 @@
   "Font face for highlighted tags."
   :group 'comment-tags)
 
+(defconst comment-tags-temp-buffer-name "*comment-tags*"
+  "Name for temp buffers to list tags.")
 
 ;;; funcs
 (defun comment-tags--get-face ()
