@@ -122,24 +122,39 @@
 
 (defun comment-tags--make-regexp ()
   "Create regexp from `comment-tags-keywords'."
-  (concat "\\<\\(\\(?:" (mapconcat 'identity comment-tags-keywords "\\|") "\\):"
-          (if (not comment-tags-require-colon)
-              "?"
-            "") "\\)"))
+  (rx-to-string
+   `(seq
+     bow
+     (group
+      (regexp ,(regexp-opt comment-tags-keywords))
+      ,(if comment-tags-require-colon
+           ":"
+         `(opt ":"))))))
+
+(defun comment-tags--in-comment (pos)
+  "Checks if in comment at POS."
+  (save-match-data (nth 4 (syntax-ppss pos))))
+(defun comment-tags--comment-start (pos)
+  "Returns start position of comment from POS."
+  (save-match-data (nth 8 (syntax-ppss pos))))
 
 (defun comment-tags--highlight-tags (limit)
   "Find areas marked with `comment-tags-highlight' and apply proper face within LIMIT."
-  (let ((case-fold-search (not comment-tags-case-sensitive)))
-    (remove-text-properties (point) (or limit (point-max)) '(comment-tags-highlight))
-    (let ((pos (point))
-          (chg (re-search-forward comment-tags-regexp limit t)))
-      (when (and chg (> chg pos))
-        (if (nth 4 (syntax-ppss chg))
-            (progn
-              (with-silent-modifications
-                (put-text-property (match-beginning 0) (match-end 0) 'comment-tags-highlight (match-data)))
-              t)
-          (comment-tags--highlight-tags limit))))))
+  (let ((pos (point))
+        (case-fold-search (not comment-tags-case-sensitive)))
+    (with-silent-modifications
+      (remove-text-properties pos (or limit (point-max)) '(comment-tags-highlight))
+      (let ((chg (re-search-forward comment-tags-regexp limit t)))
+        (when (and chg (> chg pos))
+          (if (and (comment-tags--in-comment chg)
+                   (or (not comment-tags-comment-start-only)
+                       (string-match-p
+                        (rx bos (* (not (any alphanumeric))) eos)
+                        (buffer-substring-no-properties (comment-tags--comment-start chg) (match-beginning 0)))))
+              (progn
+                (put-text-property (match-beginning 0) (match-end 0) 'comment-tags-highlight (match-data))
+                t)
+            (comment-tags--highlight-tags limit)))))))
 
 (defun comment-tags--scan ()
   "Scan current buffer from point with REGEXP."
@@ -150,10 +165,8 @@
   "Scan current buffer at startup to populate file with `comment-tags-highlight'."
   (save-excursion
     (save-match-data
-      (with-silent-modifications
-        (goto-char (point-min))
-        (let ((case-fold-search (not comment-tags-case-sensitive)))
-          (comment-tags--scan))))))
+      (goto-char (point-min))
+      (comment-tags--scan))))
 
 (defun comment-tags--find-matched-tags (&optional noprops)
   "Find list of text marked with `comment-tags-highlight' from point.
@@ -267,6 +280,7 @@ If NOPROPS is non-nil, return strings without text properties."
 ;; enable/disable functions
 (defun comment-tags--enable ()
   "Enable 'comment-tags-mode'."
+  (set (make-local-variable 'comment-tags-regexp) (comment-tags--make-regexp))
   (font-lock-add-keywords nil comment-tags-font-lock-keywords)
   (comment-tags--scan-buffer))
 
@@ -294,13 +308,6 @@ If NOPROPS is non-nil, return strings without text properties."
     (define-key map comment-tags-keymap-prefix 'comment-tags-command-map)
     map)
   "Keymap for Comment-Tags mode.")
-
-(defvar comment-tags-regexp nil
-  "Compiled tag regexp.")
-
-;; when loaded
-(eval-when-compile
-  (setq comment-tags-regexp (comment-tags--make-regexp)))
 
 ;;;###autoload
 (define-minor-mode comment-tags-mode
