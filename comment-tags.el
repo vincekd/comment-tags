@@ -5,7 +5,7 @@
 ;; Author: Vincent Dumas <vincekd@gmail.com>
 ;; URL: https://github.com/vincekd/comment-tags
 ;; Keywords: convenience, comments, tags
-;; Version: 0.1
+;; Version: 0.2
 ;; Package-Requires: ((emacs "24.5") (pkg-info "0.4"))
 
 ;; This file is NOT part of GNU Emacs.
@@ -34,7 +34,7 @@
 ;; + find tags in all buffers with keyword search
 ;; + allow input of buffer name in `comment-tags-list-tags-buffer'
 ;; + jump to next, jump to previous (C-c t n, C-c t p)
-;; + start only variable not included
+;; + start only `comment-tags-comment-start-only' not implemented
 
 
 ;;; Changelog:
@@ -132,7 +132,7 @@
   (let ((case-fold-search (not comment-tags-case-sensitive)))
     (remove-text-properties (point) (or limit (point-max)) '(comment-tags-highlight))
     (let ((pos (point))
-          (chg (re-search-forward (comment-tags--make-regexp) limit t)))
+          (chg (re-search-forward comment-tags-regexp limit t)))
       (when (and chg (> chg pos))
         (if (nth 4 (syntax-ppss chg))
             (progn
@@ -267,20 +267,16 @@ If NOPROPS is non-nil, return strings without text properties."
 ;; enable/disable functions
 (defun comment-tags--enable ()
   "Enable 'comment-tags-mode'."
-  ;; (set (make-local-variable 'syntax-propertize-function)
-  ;;      #'comment-tags--syntax-propertize-function)
   (font-lock-add-keywords nil comment-tags-font-lock-keywords)
   (comment-tags--scan-buffer))
 
 (defun comment-tags--disable ()
   "Disable 'comment-tags-mode'."
-  ;;(set (make-local-variable 'syntax-propertize-function) nil)
   (font-lock-remove-keywords nil comment-tags-font-lock-keywords))
 
 
 ;;; vars
 (defvar comment-tags-font-lock-keywords
-  ;;`((comment-tags--highlight-tags 1 'comment-tags-face t))
   `((comment-tags--highlight-tags 1 (comment-tags--get-face) t))
   "List of font-lock keywords to add to `default-keywords'.")
 
@@ -299,6 +295,12 @@ If NOPROPS is non-nil, return strings without text properties."
     map)
   "Keymap for Comment-Tags mode.")
 
+(defvar comment-tags-regexp nil
+  "Compiled tag regexp.")
+
+;; when loaded
+(eval-when-compile
+  (setq comment-tags-regexp (comment-tags--make-regexp)))
 
 ;;;###autoload
 (define-minor-mode comment-tags-mode
