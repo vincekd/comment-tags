@@ -12,6 +12,7 @@ Ability to customize highlight colors and keywords list.
   * `comment-tags-case-sensitive` to toggle case-sensitivity (default t).
   * `comment-tags-faces` to set faces for keywords.
   * `comment-tags-list` to set modeline text (default nil).
+  * `comment-tags-show-faces` to show colors/faces in comment-tags buffer/search (default t).
 
 ## Usage
 The prefix for commands is `C-c t`.

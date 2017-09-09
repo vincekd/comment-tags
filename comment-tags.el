@@ -34,11 +34,12 @@
 ;; + find tags in all buffers with keyword search
 ;; + allow input of buffer name in `comment-tags-list-tags-buffer'
 ;; + jump to next, jump to previous (C-c t n, C-c t p)
-;; + start only `comment-tags-comment-start-only' not implemented
 
 
 ;;; Changelog:
 ;; + allow differrent fonts for different `comment-tags-keywords'
+;; + `comment-tags-comment-start-only' implemented
+
 
 ;;; Code:
 
@@ -81,6 +82,11 @@
   :group 'comment-tags
   :type 'boolean)
 
+(defcustom comment-tags-show-faces t
+  "Show faces in buffer/tag search."
+  :group 'comment-tags
+  :type 'boolean)
+
 (defcustom comment-tags-keymap-prefix (kbd "C-c t")
   "Prefix for keymap."
   :group 'comment-tags
@@ -116,7 +122,7 @@
 ;;; funcs
 (defun comment-tags--get-face ()
   "Find color for keyword."
-  (let* ((str (replace-regexp-in-string (rx ":" eol) "" (match-string 1)))
+  (let* ((str (replace-regexp-in-string (rx ":" eol) "" (match-string 0)))
          (face (cdr (assoc (upcase str) comment-tags-keyword-faces))))
     (or face 'comment-tags-default-face)))
 
@@ -125,17 +131,16 @@
   (rx-to-string
    `(seq
      bow
-     (group
-      (regexp ,(regexp-opt comment-tags-keywords))
-      ,(if comment-tags-require-colon
-           ":"
-         `(opt ":"))))))
+     (regexp ,(regexp-opt comment-tags-keywords))
+     ,(if comment-tags-require-colon
+          ":"
+        `(opt ":")))))
 
 (defun comment-tags--in-comment (pos)
-  "Checks if in comment at POS."
+  "Check if in comment at POS."
   (save-match-data (nth 4 (syntax-ppss pos))))
 (defun comment-tags--comment-start (pos)
-  "Returns start position of comment from POS."
+  "Return start position of comment from POS."
   (save-match-data (nth 8 (syntax-ppss pos))))
 
 (defun comment-tags--highlight-tags (limit)
@@ -168,35 +173,53 @@
       (goto-char (point-min))
       (comment-tags--scan))))
 
-(defun comment-tags--find-matched-tags (&optional noprops)
-  "Find list of text marked with `comment-tags-highlight' from point.
-If NOPROPS is non-nil, then return string without text properties."
+(defun comment-tags--start-pos ()
+  "Get starting position of current match."
+  (max (comment-tags--comment-start (point))
+       (line-beginning-position)))
+
+(defun comment-tags--get-line-with-face (matchd)
+  "Apply faces to tag lines in buffers with `match-data' MATCHD."
+  (save-match-data
+    (set-match-data matchd)
+    (let* ((beg (comment-tags--start-pos))
+           (end (line-end-position))
+           (line-start (- (match-beginning 0) beg))
+           (line-end (- (match-end 0) beg))
+           (str (buffer-substring-no-properties beg end)))
+      (concat
+       (propertize (substring str 0 line-start) 'face 'default)
+       (propertize (substring str line-start line-end)
+                   'face (comment-tags--get-face))
+       (propertize (substring str line-end) 'face 'default)))))
+
+(defun comment-tags--find-matched-tags ()
+  "Find list of text marked with `comment-tags-highlight' from point."
   (let* ((pos (point))
-        (chg (next-single-property-change pos 'comment-tags-highlight nil nil))
-        (out (list)))
+         (chg (next-single-property-change pos 'comment-tags-highlight nil nil))
+         (out (list)))
     (when (and chg (> chg pos))
       (goto-char chg)
       (let ((val (get-text-property chg 'comment-tags-highlight)))
         (when val
+          ;;TODO: instead of line-beginning use comment-start?
           (push (list
                  (count-lines 1 chg)
-                 (string-trim
-                  (if (not noprops)
-                      (buffer-substring (line-beginning-position) (line-end-position))
-                    (buffer-substring-no-properties (line-beginning-position) (line-end-position)))))
+                 (if comment-tags-show-faces
+                     (comment-tags--get-line-with-face val)
+                   (buffer-substring-no-properties (comment-tags--start-pos) (line-end-position))))
                 out))
-        (setq out (append out (comment-tags--find-matched-tags noprops)))))
+        (setq out (append out (comment-tags--find-matched-tags)))))
     out))
 
 
-(defun comment-tags--buffer-tags (buffer &optional noprops)
-  "Find all comment tags in BUFFER.
-If NOPROPS is non-nil, return strings without text properties."
+(defun comment-tags--buffer-tags (buffer)
+  "Find all comment tags in BUFFER."
   (with-current-buffer buffer
     (save-excursion
       (goto-char (point-min))
       (cl-remove-duplicates
-       (comment-tags--find-matched-tags noprops)
+       (comment-tags--find-matched-tags)
        :test (lambda (x y)
                (or (null y) (equal (car x) (car y))))
        :from-end t))))
@@ -204,7 +227,7 @@ If NOPROPS is non-nil, return strings without text properties."
 
 (defun comment-tags--format-tag-string (tag)
   "Format a TAG for insertion into the temp buffer."
-  (format "%d:\t%s\n" (car tag) (nth 1 tag)))
+  (format "%d:\t%s\n" (car tag) (string-trim (nth 1 tag))))
 
 
 (defun comment-tags--format-buffer-string (buf-name)
@@ -239,7 +262,7 @@ If NOPROPS is non-nil, return strings without text properties."
 (defun comment-tags-find-tags-buffer ()
   "Complete tags in the current buffer and jump to line."
   (interactive)
-  (let* ((tags (comment-tags--buffer-tags (current-buffer) t))
+  (let* ((tags (comment-tags--buffer-tags (current-buffer)))
          (prompt "TAGS: ")
          (choice (completing-read
                   prompt
@@ -291,7 +314,7 @@ If NOPROPS is non-nil, return strings without text properties."
 
 ;;; vars
 (defvar comment-tags-font-lock-keywords
-  `((comment-tags--highlight-tags 1 (comment-tags--get-face) t))
+  `((comment-tags--highlight-tags 0 (comment-tags--get-face) t))
   "List of font-lock keywords to add to `default-keywords'.")
 
 (defvar comment-tags-command-map
@@ -319,8 +342,7 @@ If NOPROPS is non-nil, return strings without text properties."
   :keymap comment-tags-mode-map
   (if comment-tags-mode
       (comment-tags--enable)
-    (comment-tags--disable))
-  (font-lock-flush))
+    (comment-tags--disable)))
 
 (provide 'comment-tags)
 
