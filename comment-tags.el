@@ -88,7 +88,7 @@
   :group 'comment-tags
   :type 'string)
 
-(defcustom comment-tags-keymap-prefix (kbd "C-c c")
+(defcustom comment-tags-keymap-prefix (kbd "C-c t")
   "Prefix for keymap."
   :group 'comment-tags
   :type 'string)
@@ -237,7 +237,7 @@ If NOPROPS is non-nil, return strings without text properties."
   (interactive)
   (let* ((tags (comment-tags--buffer-tags (current-buffer) t))
          (prompt "TAGS: ")
-         (choice (ido-completing-read
+         (choice (completing-read
                   prompt
                   (mapcar (lambda (el)
                             (format "%d: %s" (car el) (nth 1 el)))
@@ -320,7 +320,7 @@ If NOPROPS is non-nil, return strings without text properties."
   (if comment-tags-mode
       (comment-tags--enable)
     (comment-tags--disable))
-  (font-lock-mode 1))
+  (font-lock-flush))
 
 (provide 'comment-tags)
 
