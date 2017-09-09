@@ -33,6 +33,8 @@
 ;;; TODO:
 ;; + find tags in all buffers with keyword search
 ;; + allow input of buffer name in `comment-tags-list-tags-buffer'
+;; + jump to next, jump to previous (C-c t n, C-c t p)
+;; + start only variable not included
 
 
 ;;; Changelog:
@@ -56,8 +58,9 @@
     "FIXME"
     "BUG"
     "HACK"
-    "XXX"
     "KLUDGE"
+    "XXX"
+    "INFO"
     "DONE")
   "Keywords to highlight and track."
   :group 'comment-tags
@@ -78,40 +81,33 @@
   :group 'comment-tags
   :type 'boolean)
 
-(defcustom comment-tags-foreground-color "Red"
-  "Font foreground color."
-  :group 'comment-tags
-  :type 'string)
-
-(defcustom comment-tags-background-color nil
-  "Font background color."
-  :group 'comment-tags
-  :type 'string)
-
 (defcustom comment-tags-keymap-prefix (kbd "C-c t")
   "Prefix for keymap."
   :group 'comment-tags
   :type 'string)
 
-(defcustom comment-tags-keyword-colors
-  '(("TODO" . "#28ABE3")
-    ("FIXME" . "#DB3340")
-    ("BUG" . "#DB3340")
-    ("HACK" . "#E8B71A")
-    ("XXX" . "#F7EAC8")
-    ("DONE" . "#1FDA9A")
-    ("KLUDGE" . "#E8B71A"))
-  "Colors for different keywords."
+(defcustom comment-tags-lighter nil
+  "Mode-line text.")
+
+(defcustom comment-tags-keyword-faces
+  `(("TODO" . ,(list :inherit 'warning :weight 'bold))
+    ("FIXME" . ,(list :inherit 'error :weight 'bold))
+    ("BUG" . ,(list :inherit 'error :weight 'bold))
+    ("HACK" . ,(list :inherit 'warning))
+    ("KLUDGE" . ,(list :inherit 'warning))
+    ("XXX" . ,(list :inherit 'underline :weight 'bold))
+    ("INFO" . ,(list :inherit 'underline :weight 'bold))
+    ("DONE" . ,(list :inherit 'success :weight 'bold)))
+  "Faces for different keywords."
   :group 'comment-tags
   :type '(repeat (cons (string :tag "Keyword")
-                       (string :tag "Color"))))
+                       (string :tag "Face"))))
 
-(defface comment-tags-face
-  `((t :foreground ,comment-tags-foreground-color
-       :background ,comment-tags-background-color
-       :weight bold
-       :underline nil))
-  "Font face for highlighted tags."
+(defface comment-tags-default-face
+  `((t :weight bold
+       :underline nil
+       :inherit default))
+  "Defalut font face for highlighted tags."
   :group 'comment-tags)
 
 (defconst comment-tags-temp-buffer-name "*comment-tags*"
@@ -121,13 +117,8 @@
 (defun comment-tags--get-face ()
   "Find color for keyword."
   (let* ((str (replace-regexp-in-string (rx ":" eol) "" (match-string 1)))
-         (color (or
-                 (cdr (assoc str comment-tags-keyword-colors))
-                 (unless comment-tags-case-sensitive
-                   (cdr (assoc (upcase str) comment-tags-keyword-colors))))))
-    (if color
-        (list :inherit 'comment-tags-face :foreground color)
-      'comment-tags-face)))
+         (face (cdr (assoc (upcase str) comment-tags-keyword-faces))))
+    (or face 'comment-tags-default-face)))
 
 (defun comment-tags--make-regexp ()
   "Create regexp from `comment-tags-keywords'."
@@ -312,7 +303,7 @@ If NOPROPS is non-nil, return strings without text properties."
 ;;;###autoload
 (define-minor-mode comment-tags-mode
   "Highlight and navigate comment tags."
-  :lighter "Comment Tags"
+  :lighter comment-tags-lighter
   :group 'comment-tags
   :require 'comment-tags
   :global nil

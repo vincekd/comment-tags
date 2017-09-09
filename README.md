@@ -10,9 +10,8 @@ Ability to customize highlight colors and keywords list.
   * `comment-tags-comment-start-only` to only match tags at the beginning of a comment (default nil).
   * `comment-tags-keymap-prefix` to alter the default prefix (default `C-c t`).
   * `comment-tags-case-sensitive` to toggle case-sensitivity (default t).
-  * `comment-tags-foreground-color` to set default color for keywords (default red).
-  * `comment-tags-background-color` to set default background color for keywords (default nil).
-  * `comment-tags-keyword-colors` to alter colors for keywords.
+  * `comment-tags-faces` to set faces for keywords.
+  * `comment-tags-list` to set modeline text (default nil).
 
 ## Usage
 The prefix for commands is `C-c t`.
