@@ -38,7 +38,7 @@
 ;;; Changelog:
 ;; + allow differrent fonts for different `comment-tags-keywords'
 ;; + `comment-tags-comment-start-only' implemented
-;; + jump to next, jump to previous (C-c t n, C-c t p)
+;; + jump to next, jump to previous (PREFIX n, PREFIX p)
 
 
 ;;; Code:
@@ -87,7 +87,7 @@
   :group 'comment-tags
   :type 'boolean)
 
-(defcustom comment-tags-keymap-prefix (kbd "C-c t")
+(defcustom comment-tags-keymap-prefix (kbd "C-c #")
   "Prefix for keymap."
   :group 'comment-tags
   :type 'string)
