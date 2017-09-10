@@ -188,10 +188,10 @@
            (line-end (- (match-end 0) beg))
            (str (buffer-substring-no-properties beg end)))
       (concat
-       (propertize (substring str 0 line-start) 'face 'default)
+       (propertize (substring str 0 line-start) 'face 'font-lock-comment-face)
        (propertize (substring str line-start line-end)
                    'face (comment-tags--get-face))
-       (propertize (substring str line-end) 'face 'default)))))
+       (propertize (substring str line-end) 'face 'font-lock-comment-face)))))
 
 (defun comment-tags--find-matched-tags ()
   "Find list of text marked with `comment-tags-highlight' from point."
@@ -239,7 +239,7 @@
   (pop-to-buffer buf)
   (goto-line line))
 
-
+;; comment-tags autoloaded functions
 ;;;###autoload
 (defun comment-tags-list-tags-buffer ()
   "List all tags in the current buffer."
@@ -256,7 +256,6 @@
         'action (lambda (a)
                   (comment-tags--open-buffer-at-line oldbuf (car element))))))))
 
-
 ;;;###autoload
 (defun comment-tags-find-tags-buffer ()
   "Complete tags in the current buffer and jump to line."
@@ -272,7 +271,6 @@
       (string-match (rx bol (1+ digit)) choice)
       (let ((num (string-to-number (match-string 0 choice))))
         (comment-tags--open-buffer-at-line (current-buffer) num)))))
-
 
 ;;;###autoload
 (defun comment-tags-list-tags-buffers ()
@@ -298,15 +296,19 @@
                       (comment-tags--open-buffer-at-line buf (car element)))))
          (insert "\n"))))))
 
-;; TODO: fix this stuff
+;; TODO: if in comment tag, go end (or beginning) then search, wrap around?
 ;;;###autoload
 (defun comment-tags-next-tag ()
   "Jump to next comment-tag from point."
   (interactive)
   (let* ((pos (point))
-         (chg (next-single-property-change pos 'comment-tags-highlight nil nil)))
-    (when (and chg (> chg pos) (get-text-property chg 'comment-tags-highlight))
-      (goto-char (next-single-property-change chg 'comment-tags-highlight nil nil)))))
+         (in-tag (get-text-property pos 'comment-tags-highlight)))
+    (when in-tag
+      (goto-char (next-single-property-change pos 'comment-tags-highlight nil nil))
+      (setq pos (point)))
+    (let ((chg (next-single-property-change pos 'comment-tags-highlight nil nil)))
+      (when (and chg (> chg pos))
+        (goto-char chg)))))
 
 ;;;###autoload
 (defun comment-tags-previous-tag ()
@@ -314,11 +316,13 @@
   (interactive)
   (let* ((pos (point))
          (chg (previous-single-property-change pos 'comment-tags-highlight nil nil)))
-    (when (and chg (< chg pos) (get-text-property chg 'comment-tags-highlight))
-      (goto-char (previous-single-property-change chg 'comment-tags-highlight nil nil)))))
+    (when (and chg (< chg pos))
+      (let ((c (previous-single-property-change chg 'comment-tags-highlight nil nil)))
+        (when c
+          (goto-char c))))))
 
 
-;; enable/disable functions
+;; mode enable/disable functions
 (defun comment-tags--enable ()
   "Enable 'comment-tags-mode'."
   (set (make-local-variable 'comment-tags-regexp) (comment-tags--make-regexp))
