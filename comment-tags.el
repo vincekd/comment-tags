@@ -202,7 +202,6 @@
       (goto-char chg)
       (let ((val (get-text-property chg 'comment-tags-highlight)))
         (when val
-          ;;TODO: instead of line-beginning use comment-start?
           (push (list
                  (count-lines 1 chg)
                  (if comment-tags-show-faces
@@ -299,6 +298,25 @@
                       (comment-tags--open-buffer-at-line buf (car element)))))
          (insert "\n"))))))
 
+;; TODO: fix this stuff
+;;;###autoload
+(defun comment-tags-next-tag ()
+  "Jump to next comment-tag from point."
+  (interactive)
+  (let* ((pos (point))
+         (chg (next-single-property-change pos 'comment-tags-highlight nil nil)))
+    (when (and chg (> chg pos) (get-text-property chg 'comment-tags-highlight))
+      (goto-char (next-single-property-change chg 'comment-tags-highlight nil nil)))))
+
+;;;###autoload
+(defun comment-tags-previous-tag ()
+  "Jump to previous comment-tag from point."
+  (interactive)
+  (let* ((pos (point))
+         (chg (previous-single-property-change pos 'comment-tags-highlight nil nil)))
+    (when (and chg (< chg pos) (get-text-property chg 'comment-tags-highlight))
+      (goto-char (previous-single-property-change chg 'comment-tags-highlight nil nil)))))
+
 
 ;; enable/disable functions
 (defun comment-tags--enable ()
@@ -322,6 +340,8 @@
     (define-key map (kbd "b") #'comment-tags-list-tags-buffer)
     (define-key map (kbd "a") #'comment-tags-list-tags-buffers)
     (define-key map (kbd "s") #'comment-tags-find-tags-buffer)
+    (define-key map (kbd "n") #'comment-tags-next-tag)
+    (define-key map (kbd "p") #'comment-tags-previous-tag)
     map)
   "Command map.")
 (fset 'comment-tags-command-map comment-tags-command-map)

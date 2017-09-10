@@ -9,9 +9,9 @@ Ability to customize highlight colors and keywords list.
   * `comment-tags-require-colon` to require a matching colon (default t).
   * `comment-tags-comment-start-only` to only match tags at the beginning of a comment (default nil).
   * `comment-tags-keymap-prefix` to alter the default prefix (default `C-c t`).
-  * `comment-tags-case-sensitive` to toggle case-sensitivity (default t).
+  * `comment-tags-case-sensitive` to set case-sensitivity (default t).
   * `comment-tags-faces` to set faces for keywords.
-  * `comment-tags-list` to set modeline text (default nil).
+  * `comment-tags-lighter` to set modeline text (default nil).
   * `comment-tags-show-faces` to show colors/faces in comment-tags buffer/search (default t).
 
 ## Usage
@@ -21,6 +21,8 @@ Commands include:
   * `b` to list tags in current buffer.
   * `a` to list tags in all buffers.
   * `s` to jump to tag in current buffer by a word or phrase using reading-completion.
+  * `n` to jump to next tag from point.
+  * `p` to jump to previous tag from point.
 
 ## TODO:
   * Filter tags in all buffers with search of comment text.
