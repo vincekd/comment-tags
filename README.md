@@ -18,14 +18,13 @@ Ability to customize highlight colors and keywords list.
 The prefix for commands is `C-c t`.
 
 Commands include:
-  * `b` to list tags in current buffer.
-  * `a` to list tags in all buffers.
-  * `s` to jump to tag in current buffer by a word or phrase using reading-completion.
-  * `n` to jump to next tag from point.
-  * `p` to jump to previous tag from point.
+  * `b` to list tags in current buffer (`comment-tags-list-tags-buffer`).
+  * `a` to list tags in all buffers (`comment-tags-list-tags-buffers`).
+  * `s` to jump to tag in current buffer by a word or phrase using reading-completion (`comment-tags-find-tags-buffer`).
+  * `n` to jump to next tag from point (`comment-tags-next-tag`).
+  * `p` to jump to previous tag from point (`comment-tags-previous-tag`).
 
 ## TODO:
-  * Filter tags in all buffers with search of comment text.
   * Issues here: https://github.com/vincekd/comment-tags/issues
 
 

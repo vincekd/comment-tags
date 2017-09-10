@@ -6,7 +6,7 @@
 ;; URL: https://github.com/vincekd/comment-tags
 ;; Keywords: convenience, comments, tags
 ;; Version: 0.2
-;; Package-Requires: ((emacs "24.5") (pkg-info "0.4"))
+;; Package-Requires: ((emacs "24.5"))
 
 ;; This file is NOT part of GNU Emacs.
 
@@ -28,17 +28,17 @@
 ;;; Commentary:
 ;; A minor mode to highlight, track, and navigate comment tags like
 ;; TODO, FIXME, etc.  It scans the buffer to allow easily jumping
-;; between comment tags, as well as viewing all tags in one view.
+;; between comment tags, as well as displaying all tags in one view.
 
 ;;; TODO:
 ;; + find tags in all buffers with keyword search
 ;; + allow input of buffer name in `comment-tags-list-tags-buffer'
-;; + jump to next, jump to previous (C-c t n, C-c t p)
 
 
 ;;; Changelog:
 ;; + allow differrent fonts for different `comment-tags-keywords'
 ;; + `comment-tags-comment-start-only' implemented
+;; + jump to next, jump to previous (C-c t n, C-c t p)
 
 
 ;;; Code:
@@ -296,7 +296,6 @@
                       (comment-tags--open-buffer-at-line buf (car element)))))
          (insert "\n"))))))
 
-;; TODO: if in comment tag, go end (or beginning) then search, wrap around?
 ;;;###autoload
 (defun comment-tags-next-tag ()
   "Jump to next comment-tag from point."
