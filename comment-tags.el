@@ -265,8 +265,8 @@
          (choice (completing-read
                   prompt
                   (mapcar (lambda (el)
-                            (format "%d: %s" (car el) (nth 1 el)))
-                            tags))))
+                            (string-trim (comment-tags--format-tag-string el)))
+                          tags))))
     (when choice
       (string-match (rx bol (1+ digit)) choice)
       (let ((num (string-to-number (match-string 0 choice))))
