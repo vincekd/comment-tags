@@ -47,8 +47,6 @@ Commands include:
         comment-tags-case-sensitive t
         comment-tags-show-faces t
         comment-tags-lighter nil))
-;; TODO: remove once added to melpa
-;;(load-file "~/dev/comment-tags/comment-tags.el")
 (add-hook 'prog-mode-hook 'comment-tags-mode)
 ```
 
